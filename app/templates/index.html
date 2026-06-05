@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proton Convertor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .drop-zone--over { border-color: #3b82f6; background-color: #eff6ff; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen">
+
+    <div class="max-w-4xl mx-auto px-4 py-12">
+        <!-- Header -->
+        <header class="text-center mb-12">
+                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">
+                    <span class="text-blue-600">Proton</span> Convertor
+                </h1>
+            <p class="text-slate-500 text-lg">The most efficient, scalable, and professional way to convert any file.</p>
+        </header>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
+            
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="relative border-2 border-dashed border-slate-300 rounded-xl p-12 text-center transition-all cursor-pointer hover:border-blue-400 hover:bg-slate-50 group">
+                <input type="file" id="file-input" class="hidden">
+                <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                    </div>
+                    <p class="text-lg font-medium text-slate-700">Click to upload or drag and drop</p>
+                    <p class="text-sm text-slate-400 mt-1">Any file format supported by the engine</p>
+                </div>
+            </div>
+
+            <!-- Configuration Section (Hidden until file selected) -->
+            <div id="config-section" class="hidden mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Selected File -->
+                    <div class="p-4 bg-slate-100 rounded-lg flex items-center space-x-3">
+                        <i class="fa-solid fa-file text-slate-400"></i>
+                        <span id="selected-filename" class="font-medium truncate text-slate-700">filename.ext</span>
+                        <span id="source-ext" class="ml-auto px-2 py-1 bg-slate-200 text-slate-600 text-xs font-bold rounded uppercase">EXT</span>
+                    </div>
+
+                    <!-- Target Format -->
+                    <div class="flex flex-col space-y-2">
+                        <label class="text-sm font-semibold text-slate-600">Convert to:</label>
+                        <select id="target-format" class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                            <!-- Options loaded dynamically -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Conversion Path Visualization -->
+                <div id="path-container" class="hidden p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <p class="text-xs font-bold text-blue-600 uppercase mb-3 tracking-wider">Conversion Pipeline</p>
+                    <div id="path-visual" class="flex flex-wrap items-center gap-2 text-sm">
+                        <!-- Path nodes loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button id="convert-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all transform active:scale-95 shadow-lg shadow-blue-200 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>Convert Now</span>
+                </button>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
+                <div class="flex flex-col items-center">
+                    <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="font-medium text-slate-700">Processing your file...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer / Help -->
+        <footer class="mt-12 text-center text-slate-400 text-sm">
+            <p>made with ❤️ by <a href="https://github.com/protonexe" class="text-blue-600 hover:underline transition-all">proton</a></p>
+            <p class="mt-2">Powered by <span class="font-semibold text-slate-600">Proton Engine</span> &bull; Professional File Conversion</p>
+        </footer>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const configSection = document.getElementById('config-section');
+        const selectedFilename = document.getElementById('selected-filename');
+        const sourceExt = document.getElementById('source-ext');
+        const targetFormatSelect = document.getElementById('target-format');
+        const pathContainer = document.getElementById('path-container');
+        const pathVisual = document.getElementById('path-visual');
+        const convertBtn = document.getElementById('convert-btn');
+        const loadingOverlay = document.getElementById('loading-overlay');
+
+        let currentFile = null;
+
+        // Load available formats on startup
+        async function loadFormats() {
+            try {
+                const res = await fetch('/formats');
+                const data = await res.json();
+                targetFormatSelect.innerHTML = data.formats.map(f => `<option value="${f}">${f.toUpperCase()}</option>`).join('');
+            } catch (e) {
+                console.error("Failed to load formats", e);
+            }
+        }
+        loadFormats();
+
+        // Drag & Drop handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drop-zone--over');
+        });
+
+        ['dragleave', 'dragend'].forEach(type => {
+            dropZone.addEventListener(type, () => dropZone.classList.remove('drop-zone--over'));
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drop-zone--over');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            currentFile = file;
+            const ext = file.name.split('.').pop().toLowerCase();
+            
+            selectedFilename.textContent = file.name;
+            sourceExt.textContent = ext;
+            configSection.classList.remove('hidden');
+            
+            // Set default target to something different
+            const options = Array.from(targetFormatSelect.options);
+            const defaultTarget = options.find(opt => opt.value !== ext) || options[0];
+            targetFormatSelect.value = defaultTarget.value;
+            
+            updatePath();
+        }
+
+        async function updatePath() {
+            const src = sourceExt.textContent;
+            const target = targetFormatSelect.value;
+            
+            if (src === target) {
+                pathContainer.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/path?src=${src}&target=${target}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    renderPath(data.path);
+                    pathContainer.classList.remove('hidden');
+                } else {
+                    pathContainer.classList.add('hidden');
+                }
+            } catch (e) {
+                pathContainer.classList.add('hidden');
+            }
+        }
+
+        function renderPath(path) {
+            if (path.length === 0) {
+                pathVisual.innerHTML = `<span class="text-slate-400 italic">Direct conversion (same format)</span>`;
+                return;
+            }
+            
+            let html = `<span class="px-2 py-1 bg-slate-200 rounded text-xs font-bold">${sourceExt.textContent.toUpperCase()}</span>`;
+            path.forEach(step => {
+                html += `<i class="fa-solid fa-arrow-right text-slate-300"></i>`;
+                html += `<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${step.target.toUpperCase()}</span>`;
+            });
+            pathVisual.innerHTML = html;
+        }
+
+        targetFormatSelect.addEventListener('change', updatePath);
+
+        convertBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            loadingOverlay.classList.remove('hidden');
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('target_format', targetFormatSelect.value);
+
+            try {
+                const res = await fetch('/convert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${currentFile.name.split('.').shift()}.${targetFormatSelect.value}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                } else {
+                    const err = await res.json();
+                    alert(`Conversion failed: ${err.detail || 'Unknown error'}`);
+                }
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
