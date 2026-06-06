@@ -22,9 +22,10 @@ class ImageFamilyConverter(BaseConverter):
             img.save(output_path, format=self._target_fmt.upper() if self._target_fmt.lower() != "jpg" else "JPEG")
         return output_path
 
-# Extensive list of image formats supported by Pillow
+# Expanded list of image formats supported by Pillow
 image_extensions = [
-    "png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", "eps", "pdf", "pxm", "tga"
+    "png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", 
+    "eps", "pdf", "pxm", "tga", "heif", "heic", "avif", "cur", "pcx"
 ]
 registry.register_family("image", image_extensions)
 

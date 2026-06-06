@@ -52,22 +52,15 @@ class ConversionEngine:
             raise ValueError(f"No conversion path found from {start_format} to {target_format}")
 
         if not path:
-            # Start and end formats are the same, just return a copy (or the original if acceptable)
-            # For professionality, we create a copy with the correct extension.
             final_path = input_path.with_suffix(f".{target_format}")
             shutil.copy2(input_path, final_path)
             return final_path
 
-        # Execution pipeline
         current_input = input_path
         temp_files = []
 
         try:
             for i, converter in enumerate(path):
-                # Create a temporary file for intermediate steps
-                # If it's the last step, we might want to use the final requested path, 
-                # but here the 'convert' method is generic, so we use a temp file and 
-                # the API layer will handle the final rename.
                 fd, temp_path_str = tempfile.mkstemp(suffix=f".{converter.target_format}")
                 os.close(fd)
                 temp_path = Path(temp_path_str)
@@ -78,7 +71,6 @@ class ConversionEngine:
 
             return current_input
         except Exception as e:
-            # Cleanup temp files on failure
             for f in temp_files:
                 if f.exists():
                     f.unlink()

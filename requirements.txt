@@ -7,14 +7,7 @@ xmltodict
 reportlab
 pdfplumber
 markdown
-fastapi
-uvicorn
-python-multipart
-Pillow
-PyYAML
-xmltodict
-reportlab
-pdfplumber
-markdown
 html2text
 pymupdf
+pandas
+openpyxl

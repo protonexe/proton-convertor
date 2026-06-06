@@ -3,88 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proton Convertor</title>
+    <title>Proton Convertor | Universal File Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .drop-zone--over { border-color: #3b82f6; background-color: #eff6ff; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); }
+        .drop-zone--over { border-color: #2563eb; background-color: #eff6ff; transform: scale(1.01); }
+        .gradient-text { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
+<body class="bg-slate-50 text-slate-900 min-h-screen overflow-x-hidden">
 
-    <div class="max-w-4xl mx-auto px-4 py-12">
+    <!-- Ambient Background Elements -->
+    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-200/30 rounded-full blur-3xl -z-10"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 rounded-full blur-3xl -z-10"></div>
+
+    <div class="max-w-5xl mx-auto px-6 py-16">
         <!-- Header -->
-        <header class="text-center mb-12">
-                <h1 class="text-4xl font-extrabold tracking-tight text-slate-900 mb-2">
-                    <span class="text-blue-600">Proton</span> Convertor
-                </h1>
-            <p class="text-slate-500 text-lg">The most efficient, scalable, and professional way to convert any file.</p>
+        <header class="text-center mb-16 relative">
+            <div class="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest uppercase bg-blue-100 text-blue-600 rounded-full animate-float">
+                The Universal Engine
+            </div>
+            <h1 class="text-6xl font-extrabold tracking-tight text-slate-900 mb-4">
+                <span class="gradient-text">Proton</span> Convertor
+            </h1>
+            <p class="text-slate-500 text-xl max-w-2xl mx-auto leading-relaxed">
+                Convert literally <span class="font-bold text-slate-700">any</span> file format to <span class="font-bold text-slate-700">any</span> other. Powered by the Omni-Graph.
+            </p>
         </header>
 
-        <!-- Main Card -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 border border-slate-200">
-            
-            <!-- Drop Zone -->
-            <div id="drop-zone" class="relative border-2 border-dashed border-slate-300 rounded-xl p-12 text-center transition-all cursor-pointer hover:border-blue-400 hover:bg-slate-50 group">
-                <input type="file" id="file-input" class="hidden">
-                <div class="flex flex-col items-center">
-                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <!-- Left Column: The Converter -->
+            <div class="lg:col-span-7">
+                <div class="bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 z-0"></div>
+                    
+                    <!-- Drop Zone -->
+                    <div id="drop-zone" class="relative z-10 border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center transition-all cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 group">
+                        <input type="file" id="file-input" class="hidden">
+                        <div class="flex flex-col items-center">
+                            <div class="w-20 h-20 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-blue-200">
+                                <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
+                            </div>
+                            <p class="text-xl font-bold text-slate-800">Drop your file here</p>
+                            <p class="text-slate-400 mt-2">or click to browse your system</p>
+                        </div>
                     </div>
-                    <p class="text-lg font-medium text-slate-700">Click to upload or drag and drop</p>
-                    <p class="text-sm text-slate-400 mt-1">Any file format supported by the engine</p>
+
+                    <!-- Configuration (Hidden until file selected) -->
+                    <div id="config-section" class="hidden mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+                        <div class="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                            <div class="flex-1 flex items-center space-x-4 w-full min-w-0">
+                                <div class="w-12 h-12 bg-white rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm border border-slate-200">
+                                    <i class="fa-solid fa-file-import text-blue-600"></i>
+                                </div>
+                                <div class="overflow-hidden truncate">
+                                    <p id="selected-filename" class="font-bold truncate text-slate-800 text-sm md:text-base">filename.ext</p>
+                                    <span id="source-ext" class="text-xs font-bold text-slate-400 uppercase tracking-tighter">EXT</span>
+                                </div>
+                            </div>
+                            
+                            <div class="hidden md:block text-slate-300 flex-shrink-0">
+                                <i class="fa-solid fa-arrow-right-long text-2xl"></i>
+                            </div>
+
+                            <div class="flex-1 w-full min-w-0">
+                                <label class="block text-xs font-bold text-slate-500 uppercase mb-2 ml-1">Target Format</label>
+                                <div class="relative">
+                                    <select id="target-format" class="w-full p-3 bg-white border border-slate-200 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer font-medium text-slate-700 transition-all truncate">
+                                        <option value="" disabled selected>Select a format...</option>
+                                        <!-- Loaded dynamically -->
+                                    </select>
+                                    <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Enhanced Path Visualization -->
+                        <div id="path-container" class="hidden p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl">
+                            <div class="flex items-center space-x-2 mb-4">
+                                <i class="fa-solid fa-diagram-project text-blue-600 text-sm"></i>
+                                <p class="text-xs font-extrabold text-blue-600 uppercase tracking-widest">Intelligent Pipeline</p>
+                            </div>
+                            <div id="path-visual" class="flex flex-wrap items-center gap-3 text-sm">
+                                <!-- Loaded dynamically -->
+                            </div>
+                        </div>
+
+                        <button id="convert-btn" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl transition-all transform active:scale-95 shadow-xl shadow-blue-200 flex items-center justify-center space-x-3 text-lg">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Execute Conversion</span>
+                        </button>
+                    </div>
+
+                    <!-- Loading Overlay -->
+                    <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 backdrop-blur-md rounded-3xl flex items-center justify-center z-20">
+                        <div class="flex flex-col items-center">
+                            <div class="relative">
+                                <div class="w-16 h-16 border-4 border-blue-100 rounded-full"></div>
+                                <div class="absolute top-0 left-0 w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                            <p class="mt-6 font-bold text-slate-800 text-lg">Processing conversion...</p>
+                            <p class="text-slate-400 text-sm">Routing through the Omni-Graph</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Configuration Section (Hidden until file selected) -->
-            <div id="config-section" class="hidden mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Selected File -->
-                    <div class="p-4 bg-slate-100 rounded-lg flex items-center space-x-3">
-                        <i class="fa-solid fa-file text-slate-400"></i>
-                        <span id="selected-filename" class="font-medium truncate text-slate-700">filename.ext</span>
-                        <span id="source-ext" class="ml-auto px-2 py-1 bg-slate-200 text-slate-600 text-xs font-bold rounded uppercase">EXT</span>
-                    </div>
-
-                    <!-- Target Format -->
-                    <div class="flex flex-col space-y-2">
-                        <label class="text-sm font-semibold text-slate-600">Convert to:</label>
-                        <select id="target-format" class="w-full p-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                            <!-- Options loaded dynamically -->
-                        </select>
+            <!-- Right Column: Quick-Convert & Info -->
+            <div class="lg:col-span-5 space-y-8">
+                <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center space-x-2">
+                        <i class="fa-solid fa-bolt-lightning text-yellow-500"></i>
+                        <span>Quick Convert</span>
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setQuickConvert('png')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-image text-xs"></i> <span>to PNG</span>
+                        </button>
+                        <button onclick="setQuickConvert('pdf')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-file-pdf text-xs"></i> <span>to PDF</span>
+                        </button>
+                        <button onclick="setQuickConvert('mp4')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-video text-xs"></i> <span>to MP4</span>
+                        </button>
+                        <button onclick="setQuickConvert('json')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-code text-xs"></i> <span>to JSON</span>
+                        </button>
+                        <button onclick="setQuickConvert('jpg')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-image text-xs"></i> <span>to JPG</span>
+                        </button>
+                        <button onclick="setQuickConvert('txt')" class="p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center space-x-2">
+                            <i class="fa-solid fa-file-lines text-xs"></i> <span>to TXT</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Conversion Path Visualization -->
-                <div id="path-container" class="hidden p-4 bg-blue-50 border border-blue-100 rounded-lg">
-                    <p class="text-xs font-bold text-blue-600 uppercase mb-3 tracking-wider">Conversion Pipeline</p>
-                    <div id="path-visual" class="flex flex-wrap items-center gap-2 text-sm">
-                        <!-- Path nodes loaded dynamically -->
-                    </div>
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-xl p-8 text-white">
+                    <h3 class="text-xl font-bold mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <span>How it works</span>
+                    </h3>
+                    <p class="text-blue-100 text-sm leading-relaxed">
+                        Unlike simple converters, Proton uses a <strong>Graph-Based Engine</strong>. If you want to convert a CSV to a Video, we automatically find the path: <br>
+                        <span class="block mt-2 font-mono text-xs bg-blue-900/30 p-2 rounded border border-blue-400/30">
+                            CSV &rarr; TXT &rarr; PNG &rarr; MP4
+                        </span>
+                    </p>
                 </div>
-
-                <!-- Action Button -->
-                <button id="convert-btn" class="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all transform active:scale-95 shadow-lg shadow-blue-200 flex items-center justify-center space-x-2">
-                    <i class="fa-solid fa-rotate"></i>
-                    <span>Convert Now</span>
-                </button>
             </div>
 
-            <!-- Loading Overlay -->
-            <div id="loading-overlay" class="hidden absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
-                <div class="flex flex-col items-center">
-                    <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p class="font-medium text-slate-700">Processing your file...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer / Help -->
-        <footer class="mt-12 text-center text-slate-400 text-sm">
-            <p>made with ❤️ by <a href="https://github.com/protonexe" class="text-blue-600 hover:underline transition-all">proton</a></p>
-            <p class="mt-2">Powered by <span class="font-semibold text-slate-600">Proton Engine</span> &bull; Professional File Conversion</p>
+        <!-- Footer -->
+        <footer class="mt-20 text-center text-slate-400 text-sm relative z-10">
+            <p class="mb-2">made with ❤️ by <a href="https://github.com/protonexe" class="text-blue-600 hover:underline transition-all font-bold">proton</a></p>
+            <p class="mt-2">Powered by <span class="font-semibold text-slate-600">Proton Engine v2.0</span> &bull; Professional Omni-Conversion</p>
         </footer>
     </div>
 
@@ -102,69 +180,94 @@
 
         let currentFile = null;
 
-        // Load available formats on startup
         async function loadFormats() {
             try {
                 const res = await fetch('/formats');
                 const data = await res.json();
-                targetFormatSelect.innerHTML = data.formats.map(f => `<option value="${f}">${f.toUpperCase()}</option>`).join('');
+                const formats = data.formats;
+                
+                // Group formats for better accessibility
+                const groups = {
+                    "Images": ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", "eps", "heif", "heic", "avif"],
+                    "Media": ["mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"],
+                    "Documents": ["pdf", "txt", "md", "html"],
+                    "Data": ["json", "csv", "yaml", "yml", "xml"]
+                };
+                
+                let optionsHtml = '<option value="" disabled selected>Select a format...</option>';
+                
+                for (const [group, exts] of Object.entries(groups)) {
+                    optionsHtml += `<optgroup label="${group}">`;
+                    const availableInGroup = formats.filter(f => exts.includes(f));
+                    availableInGroup.forEach(f => {
+                        optionsHtml += `<option value="${f}">${f.toUpperCase()}</option>`;
+                    });
+                    optionsHtml += `</optgroup>`;
+                }
+                
+                // Add any other formats not in predefined groups
+                const allKnown = Object.values(groups).flat();
+                const others = formats.filter(f => !allKnown.includes(f));
+                if (others.length > 0) {
+                    optionsHtml += `<optgroup label="Others">`;
+                    others.forEach(f => {
+                        optionsHtml += `<option value="${f}">${f.toUpperCase()}</option>`;
+                    });
+                    optionsHtml += `</optgroup>`;
+                }
+                
+                targetFormatSelect.innerHTML = optionsHtml;
             } catch (e) {
                 console.error("Failed to load formats", e);
             }
         }
         loadFormats();
 
-        // Drag & Drop handlers
+        function setQuickConvert(fmt) {
+            if (!currentFile) {
+                alert("Please upload a file first!");
+                return;
+            }
+            targetFormatSelect.value = fmt;
+            updatePath();
+        }
+
         dropZone.addEventListener('click', () => fileInput.click());
-        
         dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('drop-zone--over');
         });
-
         ['dragleave', 'dragend'].forEach(type => {
             dropZone.addEventListener(type, () => dropZone.classList.remove('drop-zone--over'));
         });
-
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('drop-zone--over');
-            if (e.dataTransfer.files.length) {
-                handleFile(e.dataTransfer.files[0]);
-            }
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
         });
-
         fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) {
-                handleFile(e.target.files[0]);
-            }
+            if (e.target.files.length) handleFile(e.target.files[0]);
         });
 
         function handleFile(file) {
             currentFile = file;
             const ext = file.name.split('.').pop().toLowerCase();
-            
             selectedFilename.textContent = file.name;
             sourceExt.textContent = ext;
             configSection.classList.remove('hidden');
-            
-            // Set default target to something different
             const options = Array.from(targetFormatSelect.options);
             const defaultTarget = options.find(opt => opt.value !== ext) || options[0];
             targetFormatSelect.value = defaultTarget.value;
-            
             updatePath();
         }
 
         async function updatePath() {
             const src = sourceExt.textContent;
             const target = targetFormatSelect.value;
-            
             if (src === target) {
                 pathContainer.classList.add('hidden');
                 return;
             }
-
             try {
                 const res = await fetch(`/path?src=${src}&target=${target}`);
                 if (res.ok) {
@@ -184,11 +287,10 @@
                 pathVisual.innerHTML = `<span class="text-slate-400 italic">Direct conversion (same format)</span>`;
                 return;
             }
-            
-            let html = `<span class="px-2 py-1 bg-slate-200 rounded text-xs font-bold">${sourceExt.textContent.toUpperCase()}</span>`;
+            let html = `<span class="px-3 py-1 bg-slate-200 rounded-lg text-xs font-bold text-slate-600">${sourceExt.textContent.toUpperCase()}</span>`;
             path.forEach(step => {
-                html += `<i class="fa-solid fa-arrow-right text-slate-300"></i>`;
-                html += `<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-bold">${step.target.toUpperCase()}</span>`;
+                html += `<i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>`;
+                html += `<span class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm">${step.target.toUpperCase()}</span>`;
             });
             pathVisual.innerHTML = html;
         }
@@ -197,19 +299,12 @@
 
         convertBtn.addEventListener('click', async () => {
             if (!currentFile) return;
-
             loadingOverlay.classList.remove('hidden');
-            
             const formData = new FormData();
             formData.append('file', currentFile);
             formData.append('target_format', targetFormatSelect.value);
-
             try {
-                const res = await fetch('/convert', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const res = await fetch('/convert', { method: 'POST', body: formData });
                 if (res.ok) {
                     const blob = await res.blob();
                     const url = window.URL.createObjectURL(blob);

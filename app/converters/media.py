@@ -21,9 +21,10 @@ class MediaFamilyConverter(BaseConverter):
         subprocess.run(cmd, check=True, capture_output=True)
         return output_path
 
-# Extensive list of media formats supported by FFmpeg
+# Expanded list of media formats supported by FFmpeg
 media_extensions = [
-    "mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"
+    "mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm",
+    "ts", "m4v", "3gp", "3gp2", "vob", "ogg", "opus"
 ]
 registry.register_family("media", media_extensions)
 
