@@ -85,6 +85,15 @@
                             </div>
                         </div>
 
+                        <!-- Advanced Options (Dynamic) -->
+                        <div id="advanced-toggle" class="flex items-center space-x-2 cursor-pointer group">
+                            <input type="checkbox" id="enable-options" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                            <label for="enable-options" class="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors uppercase tracking-wider">Advanced Settings</label>
+                        </div>
+                        <div id="options-panel" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-100/50 rounded-2xl border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <!-- Dynamic inputs here -->
+                        </div>
+
                         <!-- Enhanced Path Visualization -->
                         <div id="path-container" class="hidden p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl">
                             <div class="flex items-center space-x-2 mb-4">
@@ -177,6 +186,8 @@
         const pathVisual = document.getElementById('path-visual');
         const convertBtn = document.getElementById('convert-btn');
         const loadingOverlay = document.getElementById('loading-overlay');
+        const enableOptions = document.getElementById('enable-options');
+        const optionsPanel = document.getElementById('options-panel');
 
         let currentFile = null;
 
@@ -186,7 +197,6 @@
                 const data = await res.json();
                 const formats = data.formats;
                 
-                // Group formats for better accessibility
                 const groups = {
                     "Images": ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", "eps", "heif", "heic", "avif"],
                     "Media": ["mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"],
@@ -195,7 +205,6 @@
                 };
                 
                 let optionsHtml = '<option value="" disabled selected>Select a format...</option>';
-                
                 for (const [group, exts] of Object.entries(groups)) {
                     optionsHtml += `<optgroup label="${group}">`;
                     const availableInGroup = formats.filter(f => exts.includes(f));
@@ -205,7 +214,6 @@
                     optionsHtml += `</optgroup>`;
                 }
                 
-                // Add any other formats not in predefined groups
                 const allKnown = Object.values(groups).flat();
                 const others = formats.filter(f => !allKnown.includes(f));
                 if (others.length > 0) {
@@ -215,7 +223,6 @@
                     });
                     optionsHtml += `</optgroup>`;
                 }
-                
                 targetFormatSelect.innerHTML = optionsHtml;
             } catch (e) {
                 console.error("Failed to load formats", e);
@@ -295,7 +302,52 @@
             pathVisual.innerHTML = html;
         }
 
-        targetFormatSelect.addEventListener('change', updatePath);
+        targetFormatSelect.addEventListener('change', () => {
+            updatePath();
+            updateOptionsInputs();
+        });
+
+        enableOptions.addEventListener('change', () => {
+            optionsPanel.classList.toggle('hidden', !enableOptions.checked);
+            updateOptionsInputs();
+        });
+
+        function updateOptionsInputs() {
+            const fmt = targetFormatSelect.value.toLowerCase();
+            let html = '';
+            const isImage = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "ico"].includes(fmt);
+            const isMedia = ["mp3", "wav", "mp4", "avi", "mkv", "aac", "flac", "ogg"].includes(fmt);
+            if (isImage) {
+                html += `
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Width (px)</label>
+                        <input type="number" data-opt="width" class="w-full p-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500" placeholder="Auto">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Height (px)</label>
+                        <input type="number" data-opt="height" class="w-full p-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500" placeholder="Auto">
+                    </div>
+                    <div class="space-y-2 col-span-full md:col-span-1">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Quality (1-100)</label>
+                        <input type="number" data-opt="quality" class="w-full p-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500" value="85">
+                    </div>
+                `;
+            } else if (isMedia) {
+                html += `
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-bold text-slate-500 uppercase">Bitrate (e.g. 128k)</label>
+                        <input type="text" data-opt="bitrate" class="w-full p-2 text-sm bg-white border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500" placeholder="128k">
+                    </div>
+                    <div class="flex items-center space-x-2 py-4">
+                        <input type="checkbox" data-opt="audio_only" class="w-4 h-4 text-blue-600 rounded border-slate-300">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Extract Audio Only</label>
+                    </div>
+                `;
+            } else {
+                html = '<p class="text-xs text-slate-400 italic col-span-full text-center">No advanced options available for this format.</p>';
+            }
+            optionsPanel.innerHTML = html;
+        }
 
         convertBtn.addEventListener('click', async () => {
             if (!currentFile) return;
@@ -303,33 +355,64 @@
             const formData = new FormData();
             formData.append('file', currentFile);
             formData.append('target_format', targetFormatSelect.value);
+            if (enableOptions.checked) {
+                const options = {};
+                optionsPanel.querySelectorAll('[data-opt]').forEach(input => {
+                    const key = input.getAttribute('data-opt');
+                    const val = input.type === 'checkbox' ? input.checked : input.value;
+                    if (val) options[key] = val;
+                });
+                formData.append('options', JSON.stringify(options));
+            }
             try {
                 const res = await fetch('/convert', { method: 'POST', body: formData });
-                if (res.ok) {
-                    const blob = await res.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${currentFile.name.split('.').shift()}.${targetFormatSelect.value}`;
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                } else {
-                    const contentType = res.headers.get("content-type");
-                    if (contentType && contentType.includes("application/json")) {
-                        const err = await res.json();
-                        alert(`Conversion failed: ${err.detail || 'Unknown error'}`);
-                    } else {
-                        const text = await res.text();
-                        alert(`Conversion failed: ${text || 'Internal Server Error'}`);
-                    }
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to start conversion');
                 }
+                const { task_id } = await res.json();
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const ws = new WebSocket(`${protocol}//${window.location.host}/ws/status/${task_id}`);
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    const progressText = document.querySelector('#loading-overlay p.mt-6');
+                    if (progressText) progressText.textContent = `Processing... ${data.progress}%`;
+                    if (data.status === 'completed') {
+                        window.location.href = `/download/${task_id}`;
+                        ws.close();
+                    } else if (data.status === 'failed') {
+                        alert('Conversion failed!');
+                        loadingOverlay.classList.add('hidden');
+                        ws.close();
+                    }
+                };
+                ws.onerror = (e) => {
+                    console.error("WS Error", e);
+                    pollStatus(task_id);
+                };
             } catch (e) {
-                alert(`Error: ${e.message}`);
-            } finally {
+                alert(`Conversion Error: ${e.message}`);
                 loadingOverlay.classList.add('hidden');
             }
         });
+
+        async function pollStatus(task_id) {
+            let completed = false;
+            while (!completed) {
+                const statusRes = await fetch(`/status/${task_id}`);
+                const statusData = await statusRes.json();
+                if (statusData.status === 'completed') {
+                    completed = true;
+                    window.location.href = `/download/${task_id}`;
+                } else if (statusData.status === 'failed') {
+                    alert('Conversion failed!');
+                    loadingOverlay.classList.add('hidden');
+                    break;
+                } else {
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+        }
     </script>
 </body>
 </html>

@@ -21,7 +21,7 @@ class BaseConverter(ABC):
         pass
 
     @abstractmethod
-    async def convert(self, input_path: Path, output_path: Path) -> Path:
+    async def convert(self, input_path: Path, output_path: Path, options: dict = None) -> Path:
         """
         Performs the conversion from source_format to target_format.
         Returns the path to the converted file.

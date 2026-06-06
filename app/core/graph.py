@@ -6,6 +6,7 @@ import os
 from typing import List, Optional, Tuple
 from app.core.registry_instance import registry
 from app.converters.base import BaseConverter
+from app.core.mime import detect_format
 
 class ConversionEngine:
     """
@@ -40,12 +41,13 @@ class ConversionEngine:
 
         return None
 
-    async def convert(self, input_path: Path, target_format: str) -> Path:
+    async def convert(self, input_path: Path, target_format: str, options: dict = None) -> Path:
         """
         Executes the conversion pipeline from the input file's format to the target format.
         Manages temporary files automatically.
         """
-        start_format = input_path.suffix[1:].lower()
+        # Intelligent format detection: Magic bytes -> Extension fallback
+        start_format = detect_format(input_path) or input_path.suffix[1:].lower()
         path = self.find_path(start_format, target_format)
 
         if path is None:
@@ -66,7 +68,7 @@ class ConversionEngine:
                 temp_path = Path(temp_path_str)
                 temp_files.append(temp_path)
 
-                await converter.convert(current_input, temp_path)
+                await converter.convert(current_input, temp_path, options=options)
                 current_input = temp_path
 
             return current_input

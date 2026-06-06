@@ -4,6 +4,8 @@ FROM python:3.11-slim
 # Install system dependencies (FFmpeg is required for media conversion)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
+    libmagic-dev \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory

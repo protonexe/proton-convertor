@@ -15,19 +15,35 @@ class MediaFamilyConverter(BaseConverter):
     def target_format(self) -> str:
         return self._target_fmt
 
-    async def convert(self, input_path: Path, output_path: Path) -> Path:
+    async def convert(self, input_path: Path, output_path: Path, options: dict = None) -> Path:
         # Use a more robust FFmpeg command. 
         # For audio targets, we specifically extract audio.
         # For video targets, we ensure compatibility.
         
         audio_exts = {"mp3", "wav", "ogg", "m4a", "flac", "aac", "opus"}
         
-        if self._target_fmt.lower() in audio_exts:
+        is_audio_target = self._target_fmt.lower() in audio_exts
+        force_audio = options.get("audio_only") if options else False
+        
+        # Base command
+        cmd = ["ffmpeg", "-y", "-i", str(input_path)]
+        
+        # Options: Bitrate
+        if options and "bitrate" in options:
+            # e.g. "128k", "192k"
+            if is_audio_target or force_audio:
+                cmd.extend(["-b:a", options["bitrate"]])
+            else:
+                cmd.extend(["-b:v", options["bitrate"]])
+
+        if is_audio_target or force_audio:
             # Audio extraction: disable video stream
-            cmd = ["ffmpeg", "-y", "-i", str(input_path), "-vn", str(output_path)]
+            cmd.extend(["-vn"])
         else:
             # Video conversion: ensure standard pixel format for maximum compatibility
-            cmd = ["ffmpeg", "-y", "-i", str(input_path), "-pix_fmt", "yuv420p", str(output_path)]
+            cmd.extend(["-pix_fmt", "yuv420p"])
+            
+        cmd.append(str(output_path))
             
         try:
             subprocess.run(cmd, check=True, capture_output=True)

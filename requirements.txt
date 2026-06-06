@@ -12,3 +12,9 @@ pymupdf
 pandas
 openpyxl
 python-docx
+python-magic
+celery
+redis
+pytesseract
+ebooklib
+svglib

@@ -2,15 +2,21 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import List
+from typing import List, Optional
+import uuid
+import json
+import asyncio
+import redis.asyncio as redis
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from celery.result import AsyncResult
 
 from app.core.graph import engine
 from app.core.registry_instance import registry
+from app.worker import celery_app, conversion_task
 import app.converters # Ensure converters are registered
 
 app = FastAPI(title="Proton Convertor")
@@ -42,53 +48,164 @@ async def get_conversion_path(src: str, target: str):
 @app.post("/convert")
 async def convert_file(
     file: UploadFile = File(...),
-    target_format: str = Form(...)
+    target_format: str = Form(...),
+    options: str = Form(None)
 ):
-    """Uploads a file and converts it to the target format."""
+    """Triggers an asynchronous conversion task."""
+    import json
     filename = file.filename or "uploaded_file"
+    task_id = str(uuid.uuid4())
     
-    # Create a persistent temp directory for the session
-    # Using /tmp on Linux (Render) is faster and safer
-    session_dir = Path(tempfile.gettempdir()) / f"proton_{os.getpid()}"
-    session_dir.mkdir(exist_ok=True)
+    # Parse options
+    parsed_options = None
+    if options:
+        try:
+            parsed_options = json.loads(options)
+        except:
+            parsed_options = {}
     
-    input_path = session_dir / filename
+    # Create storage directories
+    uploads_dir = Path(tempfile.gettempdir()) / "proton_uploads"
+    downloads_dir = Path(tempfile.gettempdir()) / "proton_downloads"
+    uploads_dir.mkdir(exist_ok=True)
+    downloads_dir.mkdir(exist_ok=True)
+    
+    input_path = uploads_dir / f"{task_id}_{filename}"
+    final_filename = f"converted_{task_id}_{Path(filename).stem}.{target_format}"
+    output_path = downloads_dir / final_filename
     
     try:
         # Save uploaded file
         with input_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Perform conversion
-        result_path = await engine.convert(input_path, target_format)
+        # Trigger Celery task
+        conversion_task.delay(str(input_path), target_format, str(output_path), parsed_options)
         
-        # Prepare final output path
-        downloads_dir = Path(tempfile.gettempdir()) / "proton_downloads"
-        downloads_dir.mkdir(exist_ok=True)
+        return {"task_id": task_id, "status": "pending"}
         
-        final_filename = f"converted_{Path(filename).stem}.{target_format}"
-        final_path = downloads_dir / final_filename
-        shutil.copy2(result_path, final_path)
-        
-        return FileResponse(
-            path=final_path, 
-            filename=f"{Path(filename).stem}.{target_format}",
-            media_type="application/octet-stream"
-        )
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        # Log the error for the server admin
-        print(f"CRITICAL CONVERSION ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Conversion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error starting conversion: {str(e)}")
+
+@app.get("/status/{task_id}")
+async def get_task_status(task_id: str):
+    """Checks the status of a conversion task."""
+    result = AsyncResult(task_id, app=celery_app)
+    
+    if result.state == 'PENDING':
+        return {"status": "pending"}
+    elif result.state == 'SUCCESS':
+        return {"status": "completed", "result": result.result}
+    elif result.state == 'FAILURE':
+        return {"status": "failed", "error": str(result.info)}
+    else:
+        return {"status": result.state}
+
+@app.get("/download/{task_id}")
+async def download_result(task_id: str):
+    """Downloads the result of a completed conversion task."""
+    result = AsyncResult(task_id, app=celery_app)
+    
+    if result.state != 'SUCCESS':
+        raise HTTPException(status_code=400, detail="Conversion not completed yet or failed.")
+    
+    output_path = Path(result.result.get("output_path"))
+    if not output_path.exists():
+        raise HTTPException(status_code=404, detail="Converted file not found on disk.")
+        
+    return FileResponse(
+        path=output_path,
+        filename=output_path.name,
+        media_type="application/octet-stream"
+    )
+
+@app.post("/convert-batch")
+async def convert_batch(
+    files: List[UploadFile] = File(...),
+    target_format: str = Form(...),
+    options: str = Form(None)
+):
+    """Triggers batch conversion of multiple files."""
+    batch_id = str(uuid.uuid4())
+    parsed_options = json.loads(options) if options else {}
+    
+    uploads_dir = Path(tempfile.gettempdir()) / "proton_uploads"
+    downloads_dir = Path(tempfile.gettempdir()) / "proton_downloads"
+    uploads_dir.mkdir(exist_ok=True)
+    downloads_dir.mkdir(exist_ok=True)
+    
+    task_ids = []
+    for file in files:
+        filename = file.filename or "uploaded_file"
+        task_id = str(uuid.uuid4())
+        
+        input_path = uploads_dir / f"{task_id}_{filename}"
+        final_filename = f"batch_{batch_id}_{task_id}_{Path(filename).stem}.{target_format}"
+        output_path = downloads_dir / final_filename
+        
+        with input_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        conversion_task.delay(str(input_path), target_format, str(output_path), parsed_options)
+        task_ids.append(task_id)
+    
+    # Store batch mapping in Redis
+    redis_client = celery_app.backend
+    redis_client.set(f"batch:{batch_id}", json.dumps(task_ids))
+    
+    return {"batch_id": batch_id, "task_count": len(task_ids)}
+
+@app.get("/batch-status/{batch_id}")
+async def get_batch_status(batch_id: str):
+    """Checks the overall status of a batch conversion."""
+    redis_client = celery_app.backend
+    task_ids_raw = redis_client.get(f"batch:{batch_id}")
+    if not task_ids_raw:
+        raise HTTPException(status_code=404, detail="Batch not found")
+    
+    task_ids = json.loads(task_ids_raw)
+    results = []
+    completed_count = 0
+    
+    for tid in task_ids:
+        res = AsyncResult(tid, app=celery_app)
+        results.append({"task_id": tid, "status": res.state})
+        if res.state == 'SUCCESS':
+            completed_count += 1
+            
+    return {
+        "batch_id": batch_id,
+        "total": len(task_ids),
+        "completed": completed_count,
+        "progress": (completed_count / len(task_ids)) * 100,
+        "tasks": results
+    }
+
+@app.websocket("/ws/status/{task_id}")
+async def websocket_status(websocket: WebSocket, task_id: str):
+    """Real-time progress updates for a conversion task."""
+    await websocket.accept()
+    
+    # Connect to Redis Pub/Sub
+    r = redis.from_url(celery_app.conf.broker_url)
+    pubsub = r.pubsub()
+    await pubsub.subscribe(f"task_progress_{task_id}")
+    
+    try:
+        async for message in pubsub.listen():
+            if message["type"] == "message":
+                data = message["data"].decode("utf-8")
+                await websocket.send_text(data)
+                
+                # If completed or failed, close the socket
+                progress_data = json.loads(data)
+                if progress_data["status"] in ["completed", "failed"]:
+                    break
+    except WebSocketDisconnect:
+        pass
     finally:
-        # Cleanup session files but keep the final result for the response
-        try:
-            if input_path.exists():
-                input_path.unlink()
-        except:
-            pass
+        await pubsub.unsubscribe(f"task_progress_{task_id}")
+        await r.close()
 
 
 # Serve frontend
