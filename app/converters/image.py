@@ -25,7 +25,7 @@ class ImageFamilyConverter(BaseConverter):
 # Expanded list of image formats supported by Pillow
 image_extensions = [
     "png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", 
-    "eps", "pdf", "pxm", "tga", "heif", "heic", "avif", "cur", "pcx"
+    "eps", "pdf", "pxm", "tga", "heif", "heic", "avif", "cur", "pcx", "jfif"
 ]
 registry.register_family("image", image_extensions)
 

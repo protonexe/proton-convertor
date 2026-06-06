@@ -121,7 +121,7 @@ class DataToDocConverter(BaseConverter):
         return output_path
 
 # Universal Connectivity Registration
-image_formats = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico"]
+image_formats = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", "jfif"]
 media_formats = ["mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"]
 doc_formats = ["txt", "md", "html", "pdf"]
 data_formats = ["json", "csv", "yaml", "yml", "xml", "xlsx", "xls"]
