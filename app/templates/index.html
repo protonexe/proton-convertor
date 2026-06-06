@@ -50,7 +50,28 @@
         </button>
     </div>
 
-    <!-- Ambient Background Elements -->
+    <!-- Tool Modal -->
+    <div id="tool-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeToolModal()"></div>
+        <div class="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 id="modal-title" class="text-xl font-bold text-slate-800 dark:text-slate-200">Tool Name</h3>
+                <button onclick="closeToolModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-8">
+                <div id="modal-body" class="space-y-6">
+                    <!-- Dynamic Tool Inputs -->
+                </div>
+                <div class="mt-8 flex items-center justify-end space-x-4">
+                    <button onclick="closeToolModal()" class="px-6 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">Cancel</button>
+                    <button id="modal-execute-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all transform active:scale-95 shadow-lg shadow-blue-200 dark:shadow-blue-900/20">Execute</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-200/30 dark:bg-blue-900/20 rounded-full blur-3xl -z-10"></div>
     <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl -z-10"></div>
 
@@ -288,6 +309,12 @@
         const enableOptions = document.getElementById('enable-options');
         const optionsPanel = document.getElementById('options-panel');
 
+        // Tool Modal Elements
+        const toolModal = document.getElementById('tool-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+        const modalExecuteBtn = document.getElementById('modal-execute-btn');
+
         // Tab Management
         const tabConvert = document.getElementById('tab-convert');
         const tabTools = document.getElementById('tab-tools');
@@ -307,6 +334,147 @@
             workspaceConvert.classList.add('hidden');
             workspaceTools.classList.remove('hidden');
         });
+
+        // Tool Modal Logic
+        let activeToolId = null;
+
+        function openToolModal(toolId) {
+            activeToolId = toolId;
+            modalTitle.textContent = toolId.replace('-', ' ').toUpperCase();
+            modalBody.innerHTML = '';
+            
+            // File input (Always needed)
+            const isMultiFile = ['pdf-merge', 'audio-merge'].includes(toolId);
+            const fileInputHtml = `
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Select File${isMultiFile ? 's' : ''}</label>
+                    <input type="file" id="tool-file-input" ${isMultiFile ? 'multiple' : ''} 
+                        class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100">
+                </div>
+            `;
+            modalBody.innerHTML += fileInputHtml;
+
+            // Tool-specific options
+            let optionsHtml = '';
+            if (toolId === 'pdf-split') {
+                optionsHtml = `
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Page Range (e.g. 1-5)</label>
+                        <input type="text" data-opt="page_range" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="1-5">
+                    </div>
+                `;
+            } else if (toolId === 'pdf-rotate') {
+                optionsHtml = `
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Degrees (90, 180, 270)</label>
+                        <input type="number" data-opt="degrees" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="90">
+                    </div>
+                `;
+            } else if (toolId === 'audio-trim') {
+                optionsHtml = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Start (ms)</label>
+                            <input type="number" data-opt="start_ms" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="0">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">End (ms)</label>
+                            <input type="number" data-opt="end_ms" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="Auto">
+                        </div>
+                    </div>
+                `;
+            } else if (toolId === 'audio-volume') {
+                optionsHtml = `
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Gain (dB)</label>
+                        <input type="number" data-opt="gain" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="0">
+                    </div>
+                `;
+            }
+            modalBody.innerHTML += optionsHtml;
+            toolModal.classList.remove('hidden');
+        }
+
+        function closeToolModal() {
+            toolModal.classList.add('hidden');
+        }
+
+        modalExecuteBtn.addEventListener('click', async () => {
+            const fileInput = document.getElementById('tool-file-input');
+            if (!fileInput.files.length) {
+                alert('Please select at least one file!');
+                return;
+            }
+
+            loadingOverlay.classList.remove('hidden');
+            const formData = new FormData();
+            formData.append('tool_id', activeToolId);
+            
+            for (const file of fileInput.files) {
+                formData.append('files', file);
+            }
+
+            const options = {};
+            modalBody.querySelectorAll('[data-opt]').forEach(input => {
+                const key = input.getAttribute('data-opt');
+                options[key] = input.value;
+            });
+            formData.append('options', JSON.stringify(options));
+
+            try {
+                const res = await fetch('/tool/execute', { method: 'POST', body: formData });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Tool execution failed');
+                }
+                const { task_id } = await res.json();
+                
+                // Use WebSocket for progress
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const ws = new WebSocket(`${protocol}//${window.location.host}/ws/status/${task_id}`);
+                
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    const progressText = document.querySelector('#loading-overlay p.mt-6');
+                    if (progressText) progressText.textContent = `Executing tool... ${data.progress}%`;
+                    
+                    if (data.status === 'completed') {
+                        window.location.href = `/download/${task_id}`;
+                        ws.close();
+                        closeToolModal();
+                    } else if (data.status === 'failed') {
+                        alert('Tool execution failed!');
+                        loadingOverlay.classList.add('hidden');
+                        ws.close();
+                    }
+                };
+                ws.onerror = (e) => {
+                    console.error("WS Error", e);
+                    pollToolStatus(task_id);
+                };
+            } catch (e) {
+                alert(`Error: ${e.message}`);
+                loadingOverlay.classList.add('hidden');
+            }
+        });
+
+        async function pollToolStatus(task_id) {
+            let completed = false;
+            while (!completed) {
+                const statusRes = await fetch(`/status/${task_id}`);
+                const statusData = await statusRes.json();
+                if (statusData.status === 'completed') {
+                    completed = true;
+                    window.location.href = `/download/${task_id}`;
+                } else if (statusData.status === 'failed') {
+                    alert('Tool execution failed!');
+                    loadingOverlay.classList.add('hidden');
+                    break;
+                } else {
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+        }
 
         // Dark Mode Toggle
         const themeToggle = document.getElementById('theme-toggle');
