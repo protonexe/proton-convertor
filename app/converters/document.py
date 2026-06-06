@@ -40,7 +40,6 @@ class DocConverter(BaseConverter):
 
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         src, target = self._src.lower(), self._target.lower()
-        content = self._extract_text(input_//Path l'on a déjà fait
         content = self._extract_text(input_path)
         
         if target == "txt":
@@ -48,11 +47,8 @@ class DocConverter(BaseConverter):
         elif target == "md":
             output_path.write_text(content, encoding='utf-8')
         elif target == "html":
-            output_//Path l'on a déjà fait
             output_path.write_text(markdown.markdown(content), encoding='utf-8')
         elif target == "pdf":
-            # PROFESSIONAL PDF GENERATION
-            # Handles line wrapping and pagination so it looks like a real document
             c = canvas.Canvas(str(output_path), pagesize=LETTER)
             width, height = LETTER
             
@@ -62,7 +58,6 @@ class DocConverter(BaseConverter):
             
             lines = content.split("\\n")
             for line in lines:
-                # Split long lines to fit page width (approx 520 points)
                 wrapped_lines = simpleSplit(line, "Helvetica", 11, 520)
                 for w_line in wrapped_lines:
                     if text_obj.getY() < 40: # Page break
