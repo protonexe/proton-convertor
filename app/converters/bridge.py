@@ -107,7 +107,6 @@ class DataToDocConverter(BaseConverter):
         return "data" # Family Hub
     @property
     def target_format(self) -> str:
-        return self._//Path l'on a déjà fait
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         import json, csv, yaml
