@@ -1,4 +1,8 @@
-import magic
+try:
+    import magic
+except ImportError:
+    magic = None
+
 from pathlib import Path
 from typing import Optional
 
@@ -38,6 +42,8 @@ def detect_format(file_path: Path) -> Optional[str]:
     Detects the file format using magic bytes.
     Returns the internal format label if recognized, otherwise None.
     """
+    if magic is None:
+        return None
     try:
         mime = magic.from_file(str(file_path), mime=True)
         return MIME_MAP.get(mime)

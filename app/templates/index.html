@@ -37,8 +37,16 @@
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            <!-- Left Column: The Converter -->
-            <div class="lg:col-span-7">
+            <!-- Tab Navigation -->
+            <div class="lg:col-span-12 flex justify-center mb-8">
+                <div class="inline-flex p-1 bg-slate-200 rounded-2xl shadow-inner">
+                    <button id="tab-convert" class="px-6 py-2 rounded-xl text-sm font-bold transition-all bg-white text-blue-600 shadow-sm">Convert</button>
+                    <button id="tab-tools" class="px-6 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-700">Tools</button>
+                </div>
+            </div>
+
+            <!-- Converter Section -->
+            <div id="section-convert" class="lg:col-span-7">
                 <div class="bg-white rounded-3xl shadow-2xl p-8 border border-slate-200 relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-full -mr-16 -mt-16 z-0"></div>
                     
@@ -125,8 +133,62 @@
                 </div>
             </div>
 
-            <!-- Right Column: Quick-Convert & Info -->
-            <div class="lg:col-span-5 space-y-8">
+            <!-- Tools Section -->
+            <div id="section-tools" class="hidden lg:col-span-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- PDF Tools -->
+                    <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
+                        <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                            <i class="fa-solid fa-file-pdf text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">PDF Tools</h3>
+                        <p class="text-slate-500 text-sm mb-6">Merge, split, or rotate PDF documents with precision.</p>
+                        <div class="space-y-3">
+                            <button onclick="openToolModal('pdf-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Merge PDFs</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('pdf-split')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Split PDF</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('pdf-rotate')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-red-50 hover:text-red-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Rotate PDF</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Audio Tools -->
+                    <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
+                        <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                            <i class="fa-solid fa-music text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Audio Tools</h3>
+                        <p class="text-slate-500 text-sm mb-6">Trim clips, merge tracks, or adjust audio levels.</p>
+                        <div class="space-y-3">
+                            <button onclick="openToolModal('audio-trim')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Trim Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('audio-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Merge Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('audio-volume')" class="w-full p-3 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-blue-50 hover:text-blue-600 rounded-xl border border-slate-100 transition-all text-left flex items-center justify-between">
+                                <span>Adjust Volume</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coming Soon -->
+                    <div class="bg-slate-100 rounded-3xl shadow-inner p-8 border border-slate-200 border-dashed">
+                        <div class="w-14 h-14 bg-slate-200 text-slate-400 rounded-2xl flex items-center justify-center mb-6">
+                            <i class="fa-solid fa-rocket text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-400 mb-2">More Power</h3>
+                        <p class="text-slate-400 text-sm mb-6">We're adding AI summary and Cloud storage sync soon.</p>
+                        <div class="p-4 bg-slate-200/50 rounded-xl text-center text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            Coming Soon
+                        </div>
+                    </div>
+                </div>
+            </div>
                 <div class="bg-white rounded-3xl shadow-xl p-8 border border-slate-200">
                     <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center space-x-2">
                         <i class="fa-solid fa-bolt-lightning text-yellow-500"></i>
@@ -188,6 +250,29 @@
         const loadingOverlay = document.getElementById('loading-overlay');
         const enableOptions = document.getElementById('enable-options');
         const optionsPanel = document.getElementById('options-panel');
+
+        // Tab Management
+        const tabConvert = document.getElementById('tab-convert');
+        const tabTools = document.getElementById('tab-tools');
+        const sectionConvert = document.getElementById('section-convert');
+        const sectionTools = document.getElementById('section-tools');
+        const rightCol = document.getElementById('right-col');
+
+        tabConvert.addEventListener('click', () => {
+            tabConvert.className = 'px-6 py-2 rounded-xl text-sm font-bold transition-all bg-white text-blue-600 shadow-sm';
+            tabTools.className = 'px-6 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-700';
+            sectionConvert.classList.remove('hidden');
+            rightCol.classList.remove('hidden');
+            sectionTools.classList.add('hidden');
+        });
+
+        tabTools.addEventListener('click', () => {
+            tabTools.className = 'px-6 py-2 rounded-xl text-sm font-bold transition-all bg-white text-blue-600 shadow-sm';
+            tabConvert.className = 'px-6 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-700';
+            sectionConvert.classList.add('hidden');
+            rightCol.classList.add('hidden');
+            sectionTools.classList.remove('hidden');
+        });
 
         let currentFile = null;
 

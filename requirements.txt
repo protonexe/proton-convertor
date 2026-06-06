@@ -18,3 +18,5 @@ redis
 pytesseract
 ebooklib
 svglib
+pypdf
+pydub

@@ -181,6 +181,47 @@ async def get_batch_status(batch_id: str):
         "tasks": results
     }
 
+@app.post("/tool/execute")
+async def execute_tool(
+    tool_id: str = Form(...),
+    files: List[UploadFile] = File(...),
+    options: str = Form(None)
+):
+    """Executes a specialized tool (PDF Merge, Audio Trim, etc.)"""
+    import json
+    parsed_options = json.loads(options) if options else {}
+    
+    uploads_dir = Path(tempfile.gettempdir()) / "proton_uploads"
+    downloads_dir = Path(tempfile.gettempdir()) / "proton_downloads"
+    uploads_dir.mkdir(exist_ok=True)
+    downloads_dir.mkdir(exist_ok=True)
+    
+    task_id = str(uuid.uuid4())
+    
+    # Save all files
+    saved_files = []
+    for file in files:
+        path = uploads_dir / f"{task_id}_{file.filename}"
+        with path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        saved_files.append(str(path))
+    
+    # Use the first file as primary input for the engine
+    primary_input = Path(saved_files[0])
+    # Tool outputs usually maintain the same extension as input
+    output_path = downloads_dir / f"tool_{task_id}_{primary_input.name}"
+    
+    # Inject saved files into options for tools that need multiple files (merge)
+    parsed_options["files"] = saved_files
+    
+    # We use a dummy 'target_format' as tool converters often maintain format
+    target_format = primary_input.suffix[1:].lower()
+    
+    # Trigger Celery task (reusing conversion_task)
+    conversion_task.delay(str(primary_input), target_format, str(output_path), parsed_options)
+    
+    return {"task_id": task_id, "status": "pending"}
+
 @app.websocket("/ws/status/{task_id}")
 async def websocket_status(websocket: WebSocket, task_id: str):
     """Real-time progress updates for a conversion task."""
@@ -221,6 +262,6 @@ async def read_index():
 if __name__ == "__main__":
     import uvicorn
     import os
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 1776))
     # Explicitly set workers to 1 for Render Free Tier to avoid memory issues
     uvicorn.run(app, host="0.0.0.0", port=port, workers=1, timeout_keep_alive=5)

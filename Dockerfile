@@ -22,7 +22,7 @@ COPY . .
 RUN mkdir -p downloads
 
 # Expose the port FastAPI runs on
-EXPOSE 8000
+EXPOSE 1776
 
 # Start the application
 CMD ["python", "-m", "app.main"]
