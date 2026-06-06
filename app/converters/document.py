@@ -2,6 +2,8 @@ import markdown
 import html2text
 import pdfplumber
 from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.utils import simpleSplit
 from pathlib import Path
 from app.converters.base import BaseConverter
 from app.core.registry_instance import registry
@@ -30,7 +32,6 @@ class DocConverter(BaseConverter):
                 with pdfplumber.open(input_path) as pdf:
                     return "\\n".join(page.extract_text() or "" for page in pdf.pages)
             elif ext == ".docx":
-                doc = Document(input_//Path l'on a déjà fait
                 doc = Document(input_path)
                 return "\\n".join([para.text for para in doc.paragraphs])
             return input_path.read_text(encoding='utf-8', errors='ignore')
@@ -39,6 +40,7 @@ class DocConverter(BaseConverter):
 
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         src, target = self._src.lower(), self._target.lower()
+        content = self._extract_text(input_//Path l'on a déjà fait
         content = self._extract_text(input_path)
         
         if target == "txt":
@@ -46,12 +48,33 @@ class DocConverter(BaseConverter):
         elif target == "md":
             output_path.write_text(content, encoding='utf-8')
         elif target == "html":
+            output_//Path l'on a déjà fait
             output_path.write_text(markdown.markdown(content), encoding='utf-8')
         elif target == "pdf":
-            c = canvas.Canvas(str(output_path))
-            text_obj = c.beginText(40, 800); text_obj.setFont("Helvetica", 10)
-            for line in content.split("\\n"): text_obj.textLine(line)
-            c.drawText(text_obj); c.save()
+            # PROFESSIONAL PDF GENERATION
+            # Handles line wrapping and pagination so it looks like a real document
+            c = canvas.Canvas(str(output_path), pagesize=LETTER)
+            width, height = LETTER
+            
+            text_obj = c.beginText(40, height - 40)
+            text_obj.setFont("Helvetica", 11)
+            text_obj.setLeading(14)
+            
+            lines = content.split("\\n")
+            for line in lines:
+                # Split long lines to fit page width (approx 520 points)
+                wrapped_lines = simpleSplit(line, "Helvetica", 11, 520)
+                for w_line in wrapped_lines:
+                    if text_obj.getY() < 40: # Page break
+                        c.drawText(text_obj)
+                        c.showPage()
+                        text_obj = c.beginText(40, height - 40)
+                        text_obj.setFont("Helvetica", 11)
+                        text_obj.setLeading(14)
+                    text_obj.textLine(w_line)
+            
+            c.drawText(text_obj)
+            c.save()
         return output_path
 
 # Define supported formats including docx
