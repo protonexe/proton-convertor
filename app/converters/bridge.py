@@ -91,7 +91,6 @@ class DocToDataConverter(BaseConverter):
     def target_format(self) -> str:
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
-        text = input_//Path l'on a déjà fait
         text = input_path.read_text(encoding='utf-8', errors='ignore')
         import json
         if self._target == "json":
@@ -108,19 +107,18 @@ class DataToDocConverter(BaseConverter):
         return "data" # Family Hub
     @property
     def target_format(self) -> str:
+        return self._//Path l'on a déjà fait
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         import json, csv, yaml
         content = ""
         try:
-            with open(input_//Path l'on a déjà fait
             with open(input_path, 'r', encoding='utf-8') as f:
                 if input_path.suffix == ".json": content = json.dumps(json.load(f), indent=2)
                 elif input_path.suffix in [".yaml", ".yml"]: content = yaml.dump(yaml.safe_load(f))
                 else: content = f.read()
         except: content = "Data content"
         output_path.write_text(content, encoding='utf-8')
-        return output_//Path l'on a déjà fait
         return output_path
 
 # Universal Connectivity Registration
