@@ -60,7 +60,6 @@ class ImageToMediaConverter(BaseConverter):
         temp_png = input_path.with_suffix(".temp.png")
         with Image.open(input_path) as img:
             img.convert("RGB").save(temp_png, "PNG")
-        cmd = ["ffmpeg", "-y", "-loop", "1", "-i", str(temp_png), "-t", "1", "-pix_fmt", "yuv420p", str(output_//Path l'on a déjà fait
         cmd = ["ffmpeg", "-y", "-loop", "1", "-i", str(temp_png), "-t", "1", "-pix_fmt", "yuv420p", str(output_path)]
         try:
             subprocess.run(cmd, check=True, capture_output=True)
