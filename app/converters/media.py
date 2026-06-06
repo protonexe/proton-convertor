@@ -16,9 +16,26 @@ class MediaFamilyConverter(BaseConverter):
         return self._target_fmt
 
     async def convert(self, input_path: Path, output_path: Path) -> Path:
-        # FFmpeg is the universal tool for media
-        cmd = ["ffmpeg", "-y", "-i", str(input_path), str(output_path)]
-        subprocess.run(cmd, check=True, capture_output=True)
+        # Use a more robust FFmpeg command. 
+        # For audio targets, we specifically extract audio.
+        # For video targets, we ensure compatibility.
+        
+        audio_exts = {"mp3", "wav", "ogg", "m4a", "flac", "aac", "opus"}
+        
+        if self._target_fmt.lower() in audio_exts:
+            # Audio extraction: disable video stream
+            cmd = ["ffmpeg", "-y", "-i", str(input_path), "-vn", str(output_path)]
+        else:
+            # Video conversion: ensure standard pixel format for maximum compatibility
+            cmd = ["ffmpeg", "-y", "-i", str(input_path), "-pix_fmt", "yuv420p", str(output_path)]
+            
+        try:
+            subprocess.run(cmd, check=True, capture_output=True)
+        except subprocess.CalledProcessError as e:
+            # Log the actual ffmpeg stderr to the console for debugging
+            print(f"FFmpeg Error: {e.stderr.decode()}")
+            raise e
+            
         return output_path
 
 # Expanded list of media formats supported by FFmpeg
