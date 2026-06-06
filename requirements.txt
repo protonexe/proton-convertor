@@ -11,3 +11,4 @@ html2text
 pymupdf
 pandas
 openpyxl
+python-docx
