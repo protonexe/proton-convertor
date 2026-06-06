@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+env/
+venv/
+downloads/
+stress_tests/
+pipeline_tests/
+tests_temp/
+tests_omega.py
+tests_verify.py
+tests_pipeline.py
+server.log
+.git
+.gitignore
