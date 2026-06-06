@@ -45,39 +45,50 @@ async def convert_file(
     target_format: str = Form(...)
 ):
     """Uploads a file and converts it to the target format."""
-    # Create temporary directory for this specific conversion request
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        filename = file.filename or "uploaded_file"
-        input_path = tmp_path / filename
-        
+    filename = file.filename or "uploaded_file"
+    
+    # Create a persistent temp directory for the session
+    # Using /tmp on Linux (Render) is faster and safer
+    session_dir = Path(tempfile.gettempdir()) / f"proton_{os.getpid()}"
+    session_dir.mkdir(exist_ok=True)
+    
+    input_path = session_dir / filename
+    
+    try:
         # Save uploaded file
         with input_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
+        # Perform conversion
+        result_path = await engine.convert(input_path, target_format)
+        
+        # Prepare final output path
+        downloads_dir = Path(tempfile.gettempdir()) / "proton_downloads"
+        downloads_dir.mkdir(exist_ok=True)
+        
+        final_filename = f"converted_{Path(filename).stem}.{target_format}"
+        final_path = downloads_dir / final_filename
+        shutil.copy2(result_path, final_path)
+        
+        return FileResponse(
+            path=final_path, 
+            filename=f"{Path(filename).stem}.{target_format}",
+            media_type="application/octet-stream"
+        )
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Log the error for the server admin
+        print(f"CRITICAL CONVERSION ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Conversion error: {str(e)}")
+    finally:
+        # Cleanup session files but keep the final result for the response
         try:
-            # Perform conversion using the graph engine
-            result_path = await engine.convert(input_path, target_format)
-            
-            # Use the safe filename for the resulting file
-            downloads_dir = Path("downloads")
-            downloads_dir.mkdir(exist_ok=True)
-            
-            safe_filename = filename
-            final_filename = f"converted_{Path(safe_filename).stem}.{target_format}"
-            final_path = downloads_dir / final_filename
-            shutil.copy2(result_path, final_path)
-            
-            return FileResponse(
-                path=final_path, 
-                filename=f"{Path(safe_filename).stem}.{target_format}",
-                media_type="application/octet-stream"
-            )
-            
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Conversion error: {str(e)}")
+            if input_path.exists():
+                input_path.unlink()
+        except:
+            pass
 
 
 # Serve frontend
