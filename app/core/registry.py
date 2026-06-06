@@ -8,6 +8,7 @@ class ConverterRegistry:
     def __init__(self):
         self._converters: Dict[str, List] = {}
         self._families: Dict[str, Set[str]] = {}
+        self._tool_registry: Dict[str, any] = {}
         self._fallback_converter = None
 
     def set_fallback(self, converter):
@@ -17,6 +18,14 @@ class ConverterRegistry:
     def register_family(self, family_name: str, extensions: List[str]):
         """Groups extensions into a family."""
         self._families[family_name] = set(ext.lower() for ext in extensions)
+
+    def register_tool(self, tool_id: str, converter):
+        """Registers a converter specifically as a tool."""
+        self._tool_registry[tool_id] = converter
+
+    def get_tool(self, tool_id: str):
+        """Retrieves a tool by its ID."""
+        return self._tool_registry.get(tool_id)
 
     def register(self, converter):
         """Registers a converter instance."""

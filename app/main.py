@@ -218,7 +218,7 @@ async def execute_tool(
     target_format = primary_input.suffix[1:].lower()
     
     # Trigger Celery task (reusing conversion_task)
-    conversion_task.delay(str(primary_input), target_format, str(output_path), parsed_options)
+    conversion_task.delay(str(primary_input), target_format, str(output_path), parsed_options, tool_id=tool_id)
     
     return {"task_id": task_id, "status": "pending"}
 

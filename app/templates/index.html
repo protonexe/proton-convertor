@@ -254,28 +254,49 @@
                     </div>
                 </div>
 
-                <!-- Audio Tools -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                    <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                        <i class="fa-solid fa-music text-2xl"></i>
+                    <!-- Audio Tools -->
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
+                        <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                            <i class="fa-solid fa-music text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Audio Tools</h3>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Trim clips, merge tracks, or adjust audio levels.</p>
+                        <div class="space-y-3">
+                            <button onclick="openToolModal('audio-trim')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Trim Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('audio-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Merge Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('audio-volume')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Adjust Volume</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Audio Tools</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Trim clips, merge tracks, or adjust audio levels.</p>
-                    <div class="space-y-3">
-                        <button onclick="openToolModal('audio-trim')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Trim Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                        <button onclick="openToolModal('audio-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Merge Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                        <button onclick="openToolModal('audio-volume')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Adjust Volume</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Coming Soon -->
-                <div class="bg-slate-100 dark:bg-slate-800/50 rounded-3xl shadow-inner p-8 border border-slate-200 dark:border-slate-800 border-dashed">
+                    <!-- Compression Tools -->
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
+                        <div class="w-14 h-14 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+                            <i class="fa-solid fa-compress text-2xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Optimizer</h3>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Shrink file sizes without losing significant quality.</p>
+                        <div class="space-y-3">
+                            <button onclick="openToolModal('compress-image')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Optimize Image</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('compress-video')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Optimize Video</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                            <button onclick="openToolModal('compress-audio')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
+                                <span>Optimize Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Coming Soon -->
+                    <div class="bg-slate-100 dark:bg-slate-800/50 rounded-3xl shadow-inner p-8 border border-slate-200 dark:border-slate-800 border-dashed">
+
                     <div class="w-14 h-14 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl flex items-center justify-center mb-6">
                         <i class="fa-solid fa-rocket text-2xl"></i>
                     </div>
@@ -388,6 +409,25 @@
                     <div class="space-y-2">
                         <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Gain (dB)</label>
                         <input type="number" data-opt="gain" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="0">
+                    </div>
+                `;
+            } else if (toolId.startsWith('compress-')) {
+                optionsHtml = `
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Compression Level</label>
+                        <div class="flex gap-3">
+                            ${['low', 'medium', 'high'].map(lvl => `
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="level" data-opt="level" value="${lvl}" ${lvl === 'medium' ? 'checked' : ''} class="hidden peer">
+                                    <div class="text-center p-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition-all">
+                                        ${lvl.toUpperCase()}
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                            ${lvl_desc = {low: 'Highest quality, largest file', medium: 'Balanced', high: 'Lowest quality, smallest file'}[ 'medium' ]}
+                        </p>
                     </div>
                 `;
             }

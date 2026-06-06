@@ -54,3 +54,8 @@ class PdfToolConverter(BaseConverter):
 registry.register(PdfToolConverter("merge"))
 registry.register(PdfToolConverter("split"))
 registry.register(PdfToolConverter("rotate"))
+
+# Also register as tools
+registry.register_tool("pdf-merge", PdfToolConverter("merge"))
+registry.register_tool("pdf-split", PdfToolConverter("split"))
+registry.register_tool("pdf-rotate", PdfToolConverter("rotate"))

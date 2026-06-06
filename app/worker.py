@@ -22,9 +22,9 @@ celery_app.conf.update(
 )
 
 @celery_app.task(bind=True)
-def conversion_task(self, input_path_str: str, target_format: str, output_path_str: str, options: dict = None):
+def conversion_task(self, input_path_str: str, target_format: str, output_path_str: str, options: dict = None, tool_id: str = None):
     """
-    Asynchronous task to handle file conversion.
+    Asynchronous task to handle file conversion or tool execution.
     """
     input_path = Path(input_path_str)
     output_path = Path(output_path_str)
@@ -39,11 +39,23 @@ def conversion_task(self, input_path_str: str, target_format: str, output_path_s
     try:
         update_progress("processing", 10)
         import asyncio
-        result_path = asyncio.run(engine.convert(input_path, target_format, options=options))
+        
+        if tool_id:
+            # Execute tool directly
+            from app.core.registry_instance import registry
+            tool = registry.get_tool(tool_id)
+            if not tool:
+                raise ValueError(f"Tool {tool_id} not found in registry")
+            result_path = asyncio.run(tool.convert(input_path, output_path, options=options))
+        else:
+            # Execute graph-based conversion
+            result_path = asyncio.run(engine.convert(input_path, target_format, options=options))
         
         update_progress("processing", 90)
         if result_path.exists():
-            shutil.move(str(result_path), str(output_path))
+            # If the tool already wrote to output_path, result_path might be output_path
+            if result_path != output_path:
+                shutil.move(str(result_path), str(output_path))
             
         update_progress("completed", 100)
         return {"status": "completed", "output_path": str(output_path)}

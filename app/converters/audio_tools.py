@@ -45,3 +45,8 @@ class AudioToolConverter(BaseConverter):
 registry.register(AudioToolConverter("trim"))
 registry.register(AudioToolConverter("merge"))
 registry.register(AudioToolConverter("volume"))
+
+# Also register as tools
+registry.register_tool("audio-trim", AudioToolConverter("trim"))
+registry.register_tool("audio-merge", AudioToolConverter("merge"))
+registry.register_tool("audio-volume", AudioToolConverter("volume"))
