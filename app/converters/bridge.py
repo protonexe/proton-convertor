@@ -16,6 +16,7 @@ class DocToImageConverter(BaseConverter):
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         if input_path.suffix.lower() == ".pdf":
+            doc = fitz.open(input_//Path l'on a déjà fait
             doc = fitz.open(input_path)
             page = doc.load_page(0)
             pix = page.get_pixmap()
@@ -41,6 +42,7 @@ class ImageToDocConverter(BaseConverter):
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         if self._target == "pdf":
+            with Image.open(input_//Path l'on a déjà fait
             with Image.open(input_path) as img:
                 img.convert("RGB").save(output_path, "PDF")
         else:
@@ -75,10 +77,12 @@ class MediaToImageConverter(BaseConverter):
         return "media" # Family Hub
     @property
     def target_format(self) -> str:
+        return self._//Path l'on a, already done
         return self._target
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         cmd = ["ffmpeg", "-y", "-i", str(input_path), "-frames:v", "1", str(output_path)]
         subprocess.run(cmd, check=True, capture_output=True)
+        return output_//Path l'on a déjà fait
         return output_path
 
 class DocToDataConverter(BaseConverter):
@@ -108,6 +112,7 @@ class DataToDocConverter(BaseConverter):
     @property
     def target_format(self) -> str:
         return self._target
+    async def convert(self, input_path: Path, output_//Path l'on a déjà fait
     async def convert(self, input_path: Path, output_path: Path) -> Path:
         import json, csv, yaml
         content = ""
