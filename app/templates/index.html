@@ -227,6 +227,22 @@
                             </span>
                         </p>
                     </div>
+
+                    <!-- History Section -->
+                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
+                                <i class="fa-solid fa-clock-rotate-left text-blue-500"></i>
+                                <span>Recent</span>
+                            </h3>
+                            <button onclick="loadHistory()" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Refresh">
+                                <i class="fa-solid fa-rotate"></i>
+                            </button>
+                        </div>
+                        <div id="history-list" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                            <p class="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">Loading history...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -533,6 +549,67 @@
         }
 
         let currentFile = null;
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/history');
+                const data = await res.json();
+                const list = document.getElementById('history-list');
+                
+                if (!data.history || data.history.length === 0) {
+                    list.innerHTML = '<p class="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">No recent conversions.</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.history.forEach(item => {
+                    const statusColor = {
+                        'pending': 'text-yellow-500',
+                        'processing': 'text-blue-500',
+                        'SUCCESS': 'text-green-500',
+                        'completed': 'text-green-500',
+                        'FAILURE': 'text-red-500',
+                        'failed': 'text-red-500'
+                    }[item.status] || 'text-slate-500';
+                    
+                    const statusIcon = {
+                        'pending': 'fa-spinner fa-spin',
+                        'processing': 'fa-spinner fa-spin',
+                        'SUCCESS': 'fa-circle-check',
+                        'completed': 'fa-circle-check',
+                        'FAILURE': 'fa-circle-xmark',
+                        'failed': 'fa-circle-xmark'
+                    }[item.status] || 'fa-circle';
+                    
+                    const filename = item.filename.length > 25 ? item.filename.substring(0, 22) + '...' : item.filename;
+                    const date = new Date(item.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                    html += `
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-700 transition-all">
+                            <div class="flex items-center space-x-3 overflow-hidden">
+                                <i class="fa-solid ${statusIcon} ${statusColor} text-xs"></i>
+                                <div class="overflow-hidden">
+                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">${filename}</p>
+                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">.${item.target} &bull; ${date}</p>
+                                </div>
+                            </div>
+                            ${item.status === 'completed' || item.status === 'SUCCESS' ? 
+                                `<a href="/download/${item.task_id}" class="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Download">
+                                    <i class="fa-solid fa-download text-xs"></i>
+                                </a>` : 
+                                `<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">${item.status}</span>`
+                            }
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            } catch (e) {
+                console.error("Failed to load history", e);
+                document.getElementById('history-list').innerHTML = '<p class="text-xs text-red-400 italic text-center py-4">Could not load history.</p>';
+            }
+        }
+        loadHistory();
+        setInterval(loadHistory, 5000);
 
         async function loadFormats() {
             try {

@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+import time
 from pathlib import Path
 from typing import List, Optional
 import uuid
@@ -51,7 +52,7 @@ async def convert_file(
     target_format: str = Form(...),
     options: str = Form(None)
 ):
-    """Triggers an asynchronous conversion task."""
+    """Triggers an asynchronous conversion task and logs it to history."""
     import json
     filename = file.filename or "uploaded_file"
     task_id = str(uuid.uuid4())
@@ -82,10 +83,40 @@ async def convert_file(
         # Trigger Celery task
         conversion_task.delay(str(input_path), target_format, str(output_path), parsed_options)
         
+        # Log to History in Redis
+        redis_client = celery_app.backend
+        history_entry = {
+            "task_id": task_id,
+            "filename": filename,
+            "target": target_format,
+            "timestamp": time.time(),
+            "status": "pending"
+        }
+        # Store as a list of JSON strings
+        redis_client.lpush("proton_history", json.dumps(history_entry))
+        # Keep only last 20
+        redis_client.ltrim("proton_history", 0, 19)
+        
         return {"task_id": task_id, "status": "pending"}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error starting conversion: {str(e)}")
+
+@app.get("/history")
+async def get_history():
+    """Returns the last 20 conversion requests."""
+    redis_client = celery_app.backend
+    history_raw = redis_client.lrange("proton_history", 0, -1)
+    
+    history = []
+    for item in history_raw:
+        data = json.loads(item)
+        # Update status from Celery result
+        res = AsyncResult(data["task_id"], app=celery_app)
+        data["status"] = res.state if res.state != 'PENDING' else 'processing'
+        history.append(data)
+        
+    return {"history": history}
 
 @app.get("/status/{task_id}")
 async def get_task_status(task_id: str):
