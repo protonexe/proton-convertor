@@ -22,7 +22,7 @@ class SVGConverter(BaseConverter):
         elif self._target == "pdf":
             from reportlab.pdfgen import canvas
             c = canvas.Canvas(str(output_path))
-            c.drawSaving(drawing)
+            c.drawImage(drawing, 0, 0)
             c.save()
         else:
             # Fallback

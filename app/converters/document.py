@@ -30,15 +30,15 @@ class DocConverter(BaseConverter):
                 return html2text.html2text(input_path.read_text(encoding='utf-8', errors='ignore'))
             elif ext == ".pdf":
                 with pdfplumber.open(input_path) as pdf:
-                    return "\\n".join(page.extract_text() or "" for page in pdf.pages)
+                    return "\n".join(page.extract_text() or "" for page in pdf.pages)
             elif ext == ".docx":
                 doc = Document(input_path)
-                return "\\n".join([para.text for para in doc.paragraphs])
+                return "\n".join([para.text for para in doc.paragraphs])
             return input_path.read_text(encoding='utf-8', errors='ignore')
         except Exception:
             return "Could not extract text from file."
 
-    async def convert(self, input_path: Path, output_path: Path) -> Path:
+    async def convert(self, input_path: Path, output_path: Path, options: dict = None) -> Path:
         src, target = self._src.lower(), self._target.lower()
         content = self._extract_text(input_path)
         
@@ -56,7 +56,7 @@ class DocConverter(BaseConverter):
             text_obj.setFont("Helvetica", 11)
             text_obj.setLeading(14)
             
-            lines = content.split("\\n")
+            lines = content.split("\n")
             for line in lines:
                 wrapped_lines = simpleSplit(line, "Helvetica", 11, 520)
                 for w_line in wrapped_lines:

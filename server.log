@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "C:\Users\rejip\convertor\app\main.py", line 12, in <module>
-    from app.core.graph import engine
-ModuleNotFoundError: No module named 'app'

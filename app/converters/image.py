@@ -22,7 +22,6 @@ class ImageFamilyConverter(BaseConverter):
                 width = options.get("width")
                 height = options.get("height")
                 if width or height:
-                    # Maintain aspect ratio if only one is provided
                     orig_w, orig_h = img.size
                     if width and not height:
                         height = int(orig_h * (width / orig_w))
@@ -30,10 +29,12 @@ class ImageFamilyConverter(BaseConverter):
                         width = int(orig_w * (height / orig_h))
                     img = img.resize((width, height), Image.Resampling.LANCZOS)
 
-            if self._target_fmt.lower() in ["jpg", "jpeg"]:
+            fmt = self._target_fmt.lower()
+            pillow_format = {"jpg": "JPEG", "jpeg": "JPEG", "jfif": "JPEG"}.get(fmt, fmt.upper())
+            if fmt in ("jpg", "jpeg", "jfif"):
                 img = img.convert("RGB")
             
-            save_args = {"format": self._target_fmt.upper() if self._target_fmt.lower() != "jpg" else "JPEG"}
+            save_args = {"format": pillow_format}
             if options and "quality" in options:
                 save_args["quality"] = options["quality"]
             

@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
 Pillow
 PyYAML
@@ -13,10 +13,9 @@ pandas
 openpyxl
 python-docx
 python-magic
-celery
-redis
 pytesseract
 ebooklib
 svglib
 pypdf
 pydub
+audioop-lts

@@ -15,3 +15,7 @@ tests_omega.py
 tests_verify.py
 tests_pipeline.py
 server.log
+server_out.txt
+svr.log
+start.ps1
+*.jfif

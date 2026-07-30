@@ -43,6 +43,21 @@ class DataFamilyConverter(BaseConverter):
 
     def _from_dict(self, data, output_path: Path):
         target = self._target_fmt.lower()
+        if target in ["txt", "md", "html"]:
+            if isinstance(data, list):
+                lines = []
+                for row in data:
+                    if isinstance(row, dict):
+                        lines.append(", ".join(f"{k}: {v}" for k, v in row.items()))
+                    else:
+                        lines.append(str(row))
+                output_path.write_text("\n".join(lines), encoding='utf-8')
+            elif isinstance(data, dict):
+                output_path.write_text(json.dumps(data, indent=2), encoding='utf-8')
+            else:
+                output_path.write_text(str(data), encoding='utf-8')
+            return
+
         with open(output_path, 'w', encoding='utf-8') as f:
             if target == "json": json.dump(data, f, indent=2)
             elif target in ["yaml", "yml"]: yaml.dump(data, f)
@@ -59,7 +74,7 @@ class DataFamilyConverter(BaseConverter):
                 else:
                     f.write(str(data))
 
-    async def convert(self, input_path: Path, output_path: Path) -> Path:
+    async def convert(self, input_path: Path, output_path: Path, options: dict = None) -> Path:
         data = self._to_dict(input_path)
         self._from_dict(data, output_path)
         return output_path
