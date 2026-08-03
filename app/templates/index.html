@@ -411,9 +411,10 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
         fetch(`/api/compatible/${ext}`),
         fetch('/api/presets'),
       ]);
-      state.categories = await catRes.json();
-      state.compatibleFormats = await fmtRes.json();
-      state.presets = await presetRes.json();
+      state.categories = (await catRes.json()).categories;
+      const compatData = await fmtRes.json();
+      state.compatibleFormats = compatData.targets || {};
+      state.presets = Object.values((await presetRes.json()).presets || {});
       renderFormatSelector(ext);
       $('#sectionFormat').classList.remove('hidden');
       $('#sectionFormat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -434,10 +435,11 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
 
     tabsEl.innerHTML = '';
     cats.forEach(cat => {
+      const catData = state.compatibleFormats[cat] || {};
       const btn = document.createElement('button');
       btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-slate-600/20 hover:bg-slate-600/30';
       btn.dataset.cat = cat;
-      btn.textContent = cat;
+      btn.textContent = catData.label || cat;
       btn.addEventListener('click', () => selectCategory(cat));
       tabsEl.appendChild(btn);
     });
@@ -452,14 +454,16 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
         b.classList.toggle('tab-active', b.dataset.cat === cat);
       });
       chipsEl.innerHTML = '';
-      const formats = state.compatibleFormats[cat] || [];
+      const catData = state.compatibleFormats[cat] || {};
+      const formats = catData.formats || [];
       formats.forEach(fmt => {
+        const ext = typeof fmt === 'string' ? fmt : fmt.ext;
+        const label = typeof fmt === 'string' ? fmt.toUpperCase() : (fmt.label || fmt.ext);
         const chip = document.createElement('button');
         chip.className = 'chip px-4 py-2 rounded-xl text-sm font-semibold border border-slate-500/20 bg-slate-700/30 hover:bg-brand-600/20 hover:border-brand-500/40 transition';
-        chip.textContent = fmt.label || fmt.ext;
-        chip.dataset.ext = fmt.ext;
-        chip.dataset.label = fmt.label || fmt.ext;
-        chip.addEventListener('click', () => selectFormat(fmt));
+        chip.textContent = label;
+        chip.dataset.ext = ext;
+        chip.addEventListener('click', () => selectFormat({ext, label}));
         chipsEl.appendChild(chip);
       });
       renderPresets();
@@ -483,36 +487,49 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
     const el = $('#presetButtons');
     el.innerHTML = '';
     if (!state.presets || state.presets.length === 0) return;
-    const pIcons = { iPhone:'M12 18h.01 M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z', Android:'M12 18h.01 M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z', Web:'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', Discord:'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' };
     state.presets.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/40 hover:bg-brand-600/20 border border-slate-500/20 hover:border-brand-500/30 transition flex items-center gap-1.5';
-      btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="${pIcons[p.name]||pIcons.Web}" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(p.name)}`;
+      btn.textContent = p.label || p.name || 'Preset';
       btn.addEventListener('click', () => applyPreset(p));
       el.appendChild(btn);
     });
   }
 
   function applyPreset(preset) {
-    if (preset.format) {
-      const fmts = Object.values(state.compatibleFormats).flat();
-      const match = fmts.find(f => f.ext === preset.format || (f.label||'').toLowerCase() === (preset.format||'').toLowerCase());
-      if (match) {
-        state.selectedFormat = match.label || match.ext;
-        state.selectedExt = match.ext;
-        $$('#formatChips .chip').forEach(c => c.classList.toggle('chip-selected', c.dataset.ext === match.ext));
-        const src = state.files[0]?.name.split('.').pop()?.toUpperCase();
-        $('#flowDiagram').textContent = `${src} → ${match.ext.toUpperCase()}`;
-      }
-    }
-    if (preset.options) {
-      Object.entries(preset.options).forEach(([k,v]) => {
-        const inp = $(`#opt_${k}`);
-        if (inp) {
-          inp.value = v;
-          if(inp.type === 'checkbox') inp.checked = v;
+    const configs = preset.configs || {};
+    const cats = Object.keys(state.compatibleFormats);
+    let applied = false;
+
+    for (const cat of cats) {
+      if (configs[cat]) {
+        const cfg = configs[cat];
+        const targetExt = cfg.format;
+        const catData = state.compatibleFormats[cat] || {};
+        const formats = catData.formats || [];
+
+        const ext = typeof formats[0] === 'string' ? formats.find(f => f === targetExt) : formats.find(f => f.ext === targetExt);
+        if (ext) {
+          const extVal = typeof ext === 'string' ? ext : ext.ext;
+          const label = typeof ext === 'string' ? ext.toUpperCase() : (ext.label || ext.ext);
+          state.selectedFormat = label;
+          state.selectedExt = extVal;
+          $$('#formatChips .chip').forEach(c => c.classList.toggle('chip-selected', c.dataset.ext === extVal));
+          selectCategory(cat);
+          $$('#categoryTabs button').forEach(b => b.classList.toggle('tab-active', b.dataset.cat === cat));
+          const src = state.files[0]?.name.split('.').pop()?.toUpperCase();
+          $('#flowDiagram').textContent = `${src} → ${extVal.toUpperCase()}`;
+
+          if (cfg.options) {
+            Object.entries(cfg.options).forEach(([k, v]) => {
+              const inp = $(`#opt_${k}`);
+              if (inp) { inp.value = v; if (inp.type === 'checkbox') inp.checked = v; }
+            });
+          }
+          applied = true;
+          break;
         }
-      });
+      }
     }
     renderSettings();
     updateConvertButton();
