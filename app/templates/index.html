@@ -1,838 +1,956 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Proton Convertor | Universal File Engine</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        proton: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
-        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); }
-        .dark .glass { background: rgba(15, 23, 42, 0.7); }
-        .drop-zone--over { border-color: #2563eb; background-color: #eff6ff; transform: scale(1.01); }
-        .dark .drop-zone--over { background-color: #1e293b; }
-        .gradient-text { background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .animate-float { animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proton Convertor</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+      colors: {
+        brand: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+      }
+    }
+  }
+}
+</script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body { font-family: 'Inter', system-ui, sans-serif; margin: 0; transition: background-color 0.3s, color 0.3s; }
+html.dark body { background: #0f172a; color: #e2e8f0; }
+html:not(.dark) body { background: #f8fafc; color: #1e293b; }
+.glass { backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+html.dark .glass { background: rgba(30,41,59,0.7); border: 1px solid rgba(148,163,184,0.1); }
+html:not(.dark) .glass { background: rgba(255,255,255,0.8); border: 1px solid rgba(0,0,0,0.08); }
+.progress-bar { background: linear-gradient(90deg, #2563eb, #3b82f6, #60a5fa); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes checkmark-draw { 0%{stroke-dashoffset:50} 100%{stroke-dashoffset:0} }
+@keyframes fade-in { 0%{opacity:0;transform:translateY(10px)} 100%{opacity:1;transform:translateY(0)} }
+@keyframes pulse-ring { 0%{transform:scale(0.8);opacity:1} 100%{transform:scale(1.4);opacity:0} }
+.animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+.checkmark-circle { animation: pulse-ring 0.6s ease-out forwards; }
+.checkmark-check { stroke-dasharray: 50; stroke-dashoffset: 50; animation: checkmark-draw 0.4s 0.3s ease-out forwards; }
+.drop-zone-active { border-color: #3b82f6 !important; background: rgba(37,99,235,0.08) !important; }
+html.dark .drop-zone-active { background: rgba(37,99,235,0.15) !important; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+.tab-active { background: #2563eb; color: white; }
+html:not(.dark) .tab-active { background: #2563eb; color: white; }
+.chip { transition: all 0.15s ease; }
+.chip:hover { transform: scale(1.05); }
+.chip-selected { background: #2563eb !important; color: white !important; border-color: #2563eb !important; }
+.fade-enter { opacity: 0; transform: translateY(8px); }
+.fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.25s ease; }
+</style>
 </head>
-<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen overflow-x-hidden transition-colors duration-300">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Theme Toggle -->
-    <div class="fixed top-6 right-6 z-50">
-        <button id="theme-toggle" class="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:scale-110 transition-all active:scale-95">
-            <i id="theme-icon" class="fa-solid fa-moon text-xl"></i>
+<header class="sticky top-0 z-50 glass border-b border-slate-700/20">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(0 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">Proton Convertor</h1>
+        <p class="text-[10px] font-medium opacity-50 hidden sm:block">Professional File Conversion Engine</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="themeToggle" class="p-2 rounded-xl hover:bg-slate-200/10 transition" title="Toggle theme">
+        <svg id="iconSun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="sticky top-[57px] z-40 glass border-b border-slate-700/10">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 flex gap-1 py-2">
+    <button class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold transition" data-tab="convert">Convert</button>
+    <button class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold transition" data-tab="tools">Tools</button>
+  </div>
+</nav>
+
+<main class="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10">
+
+<!-- CONVERT TAB -->
+<div id="tabConvert">
+
+  <!-- Step Indicators -->
+  <div class="flex items-center justify-center gap-3 mb-8">
+    <div class="step-indicator flex items-center gap-2" data-step="1">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-brand-600 text-white">1</div>
+      <span class="text-sm font-semibold hidden sm:block">Upload</span>
+    </div>
+    <div class="w-8 h-px bg-slate-600/30 step-line" data-line="1"></div>
+    <div class="step-indicator flex items-center gap-2" data-step="2">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-slate-600/30 text-slate-400">2</div>
+      <span class="text-sm font-semibold hidden sm:block opacity-50">Format</span>
+    </div>
+    <div class="w-8 h-px bg-slate-600/30 step-line" data-line="2"></div>
+    <div class="step-indicator flex items-center gap-2" data-step="3">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-slate-600/30 text-slate-400">3</div>
+      <span class="text-sm font-semibold hidden sm:block opacity-50">Convert</span>
+    </div>
+  </div>
+
+  <!-- STEP 1: Upload -->
+  <section id="sectionUpload" class="animate-fade-in">
+    <div id="dropZone" class="drop-zone border-2 border-dashed border-slate-500/30 rounded-2xl p-10 sm:p-16 text-center cursor-pointer transition-all duration-200 hover:border-brand-500/50">
+      <input type="file" id="fileInput" multiple class="hidden">
+      <div id="uploadPlaceholder">
+        <svg class="w-16 h-16 mx-auto mb-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p class="text-lg font-semibold mb-1">Drop files here or click to browse</p>
+        <p class="text-sm opacity-50">Supports images, videos, audio, documents, and data files</p>
+      </div>
+      <div id="uploadFileInfo" class="hidden">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-brand-600/15 flex items-center justify-center">
+            <svg class="w-7 h-7 text-brand-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-linecap="round"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <div id="fileDetails"></div>
+          <button id="btnClearFiles" class="mt-1 text-sm text-red-400 hover:text-red-300 transition font-medium">Remove files</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: Format Selector -->
+  <section id="sectionFormat" class="hidden mt-6 animate-fade-in">
+    <div class="glass rounded-2xl p-5 sm:p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="text-sm font-bold opacity-60 uppercase tracking-wider">Target Format</div>
+        <div id="flowDiagram" class="text-sm font-mono bg-slate-800/50 px-3 py-1 rounded-lg"></div>
+      </div>
+      <div id="categoryTabs" class="flex flex-wrap gap-1.5 mb-4"></div>
+      <div id="formatChips" class="flex flex-wrap gap-2"></div>
+
+      <!-- Device Presets -->
+      <div class="mt-5 pt-4 border-t border-slate-600/20">
+        <div class="text-xs font-semibold opacity-40 uppercase tracking-wider mb-2.5">Device Presets</div>
+        <div id="presetButtons" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div id="settingsPanel" class="hidden mt-5 pt-4 border-t border-slate-600/20">
+        <button id="btnToggleSettings" class="flex items-center gap-2 text-sm font-semibold opacity-70 hover:opacity-100 transition mb-3">
+          <svg class="w-4 h-4 transition-transform" id="settingsChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          Conversion Settings
         </button>
+        <div id="settingsContent" class="hidden space-y-4"></div>
+      </div>
     </div>
 
-    <!-- Tool Modal -->
-    <div id="tool-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeToolModal()"></div>
-        <div class="relative bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <h3 id="modal-title" class="text-xl font-bold text-slate-800 dark:text-slate-200">Tool Name</h3>
-                <button onclick="closeToolModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
-            </div>
-            <div class="p-8">
-                <div id="modal-body" class="space-y-6">
-                    <!-- Dynamic Tool Inputs -->
-                </div>
-                <div class="mt-8 flex items-center justify-end space-x-4">
-                    <button onclick="closeToolModal()" class="px-6 py-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">Cancel</button>
-                    <button id="modal-execute-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all transform active:scale-95 shadow-lg shadow-blue-200 dark:shadow-blue-900/20">Execute</button>
-                </div>
-            </div>
-        </div>
+    <!-- Convert Button -->
+    <div class="mt-5 text-center">
+      <button id="btnConvert" disabled class="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-brand-600 text-white font-bold text-base shadow-lg shadow-brand-600/25 hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Convert Now
+      </button>
     </div>
+  </section>
 
-    <div class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-200/30 dark:bg-blue-900/20 rounded-full blur-3xl -z-10"></div>
-    <div class="fixed bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-200/30 dark:bg-purple-900/20 rounded-full blur-3xl -z-10"></div>
-
-    <div class="max-w-6xl mx-auto px-6 py-16">
-        <!-- Header -->
-        <header class="text-center mb-16 relative">
-            <div class="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest uppercase bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-full animate-float">
-                The Universal Engine
-            </div>
-            <h1 class="text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4">
-                <span class="gradient-text">Proton</span> Convertor
-            </h1>
-            <p class="text-slate-500 dark:text-slate-400 text-xl max-w-2xl mx-auto leading-relaxed">
-                Convert literally <span class="font-bold text-slate-700 dark:text-slate-200">any</span> file format to <span class="font-bold text-slate-700 dark:text-slate-200">any</span> other. Powered by the Omni-Graph.
-            </p>
-        </header>
-
-        <!-- Main Layout Grid -->
-        <div class="flex flex-col items-center">
-            <!-- Tab Navigation -->
-            <div class="flex p-1 bg-slate-200 dark:bg-slate-800 rounded-2xl shadow-inner mb-12">
-                <button id="tab-convert" class="px-8 py-2.5 rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm">Convert</button>
-                <button id="tab-tools" class="px-8 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Tools</button>
-            </div>
-
-            <!-- Converter Workspace (Visible by default) -->
-            <div id="workspace-convert" class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start w-full">
-                <!-- Left Column: The Converter -->
-                <div class="lg:col-span-7">
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 dark:bg-blue-900/10 rounded-bl-full -mr-16 -mt-16 z-0"></div>
-                        
-                        <!-- Drop Zone -->
-                        <div id="drop-zone" class="relative z-10 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-12 text-center transition-all cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 group">
-                            <input type="file" id="file-input" class="hidden">
-                            <div class="flex flex-col items-center">
-                                <div class="w-20 h-20 bg-blue-600 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-blue-200 dark:shadow-blue-900/20">
-                                    <i class="fa-solid fa-cloud-arrow-up text-3xl"></i>
-                                </div>
-                                <p class="text-xl font-bold text-slate-800 dark:text-slate-200">Drop your file here</p>
-                                <p class="text-slate-400 dark:text-slate-500 mt-2">or click to browse your system</p>
-                            </div>
-                        </div>
-
-                        <!-- Configuration -->
-                        <div id="config-section" class="hidden mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
-                            <div class="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
-                                <div class="flex-1 flex items-center space-x-4 w-full min-w-0">
-                                    <div class="w-12 h-12 bg-white dark:bg-slate-800 rounded-xl flex-shrink-0 flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-700">
-                                        <i class="fa-solid fa-file-import text-blue-600 dark:text-blue-400"></i>
-                                    </div>
-                                    <div class="overflow-hidden truncate">
-                                        <p id="selected-filename" class="font-bold truncate text-slate-800 dark:text-slate-200 text-sm md:text-base">filename.ext</p>
-                                        <span id="source-ext" class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">EXT</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="hidden md:block text-slate-300 dark:text-slate-600 flex-shrink-0">
-                                    <i class="fa-solid fa-arrow-right-long text-2xl"></i>
-                                </div>
-
-                                <div class="flex-1 w-full min-w-0">
-                                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-2 ml-1">Target Format</label>
-                                    <div class="relative">
-                                        <select id="target-format" class="w-full p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl appearance-none focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer font-medium text-slate-700 dark:text-slate-300 transition-all truncate">
-                                            <option value="" disabled selected>Select a format...</option>
-                                        </select>
-                                        <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                                            <i class="fa-solid fa-chevron-down text-xs"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Advanced Options -->
-                            <div id="advanced-toggle" class="flex items-center space-x-2 cursor-pointer group">
-                                <input type="checkbox" id="enable-options" class="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 focus:ring-blue-500 bg-white dark:bg-slate-900">
-                                <label for="enable-options" class="text-xs font-bold text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors uppercase tracking-wider">Advanced Settings</label>
-                            </div>
-                            <div id="options-panel" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-100/50 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in slide-in-from-top-4 duration-300">
-                                <!-- Dynamic inputs here -->
-                            </div>
-
-                            <!-- Path Visualization -->
-                            <div id="path-container" class="hidden p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-900/30 rounded-2xl">
-                                <div class="flex items-center space-x-2 mb-4">
-                                    <i class="fa-solid fa-diagram-project text-blue-600 dark:text-blue-400 text-sm"></i>
-                                    <p class="text-xs font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Intelligent Pipeline</p>
-                                </div>
-                                <div id="path-visual" class="flex flex-wrap items-center gap-3 text-sm">
-                                    <!-- Loaded dynamically -->
-                                </div>
-                            </div>
-
-                            <button id="convert-btn" class="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl transition-all transform active:scale-95 shadow-xl shadow-blue-200 dark:shadow-blue-900/20 flex items-center justify-center space-x-3 text-lg">
-                                <i class="fa-solid fa-bolt"></i>
-                                <span>Execute Conversion</span>
-                            </button>
-                        </div>
-
-                        <!-- Loading Overlay -->
-                        <div id="loading-overlay" class="hidden absolute inset-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl flex items-center justify-center z-20">
-                            <div class="flex flex-col items-center">
-                                <div class="relative">
-                                    <div class="w-16 h-16 border-4 border-blue-100 dark:border-blue-900 rounded-full"></div>
-                                    <div class="absolute top-0 left-0 w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                                <p class="mt-6 font-bold text-slate-800 dark:text-slate-200 text-lg">Processing conversion...</p>
-                                <p class="text-slate-400 dark:text-slate-500 text-sm">Routing through the Omni-Graph</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column: Quick-Convert & Info -->
-                <div class="lg:col-span-5 space-y-8">
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-6 flex items-center space-x-2">
-                            <i class="fa-solid fa-bolt-lightning text-yellow-500"></i>
-                            <span>Quick Convert</span>
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <button onclick="setQuickConvert('png')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-image text-xs"></i> <span>to PNG</span>
-                            </button>
-                            <button onclick="setQuickConvert('pdf')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-file-pdf text-xs"></i> <span>to PDF</span>
-                            </button>
-                            <button onclick="setQuickConvert('mp4')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-video text-xs"></i> <span>to MP4</span>
-                            </button>
-                            <button onclick="setQuickConvert('json')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-code text-xs"></i> <span>to JSON</span>
-                            </button>
-                            <button onclick="setQuickConvert('jpg')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-image text-xs"></i> <span>to JPG</span>
-                            </button>
-                            <button onclick="setQuickConvert('txt')" class="p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center space-x-2">
-                                <i class="fa-solid fa-file-lines text-xs"></i> <span>to TXT</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl shadow-xl p-8 text-white">
-                        <h3 class="text-xl font-bold mb-4 flex items-center space-x-2">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span>How it works</span>
-                        </h3>
-                        <p class="text-blue-100 text-sm leading-relaxed">
-                            Unlike simple converters, Proton uses a <strong>Graph-Based Engine</strong>. If you want to convert a CSV to a Video, we automatically find the path: <br>
-                            <span class="block mt-2 font-mono text-xs bg-blue-900/30 p-2 rounded border border-blue-400/30">
-                                CSV &rarr; TXT &rarr; PNG &rarr; MP4
-                            </span>
-                        </p>
-                    </div>
-
-                    <!-- History Section -->
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-2">
-                                <i class="fa-solid fa-clock-rotate-left text-blue-500"></i>
-                                <span>Recent</span>
-                            </h3>
-                            <button onclick="loadHistory()" class="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Refresh">
-                                <i class="fa-solid fa-rotate"></i>
-                            </button>
-                        </div>
-                        <div id="history-list" class="space-y-3 max-h-64 overflow-y-auto pr-2">
-                            <p class="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">Loading history...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tools Workspace (Hidden by default) -->
-        <div id="workspace-tools" class="hidden w-full">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- PDF Tools -->
-                <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                    <div class="w-14 h-14 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                        <i class="fa-solid fa-file-pdf text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">PDF Tools</h3>
-                    <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Merge, split, or rotate PDF documents with precision.</p>
-                    <div class="space-y-3">
-                        <button onclick="openToolModal('pdf-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Merge PDFs</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                        <button onclick="openToolModal('pdf-split')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Split PDF</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                        <button onclick="openToolModal('pdf-rotate')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                            <span>Rotate PDF</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-
-                    <!-- Audio Tools -->
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                        <div class="w-14 h-14 bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                            <i class="fa-solid fa-music text-2xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Audio Tools</h3>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Trim clips, merge tracks, or adjust audio levels.</p>
-                        <div class="space-y-3">
-                            <button onclick="openToolModal('audio-trim')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Trim Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                            <button onclick="openToolModal('audio-merge')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Merge Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                            <button onclick="openToolModal('audio-volume')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Adjust Volume</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Compression Tools -->
-                    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-xl p-8 border border-slate-200 dark:border-slate-800">
-                        <div class="w-14 h-14 bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                            <i class="fa-solid fa-compress text-2xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Optimizer</h3>
-                        <p class="text-slate-500 dark:text-slate-400 text-sm mb-6">Shrink file sizes without losing significant quality.</p>
-                        <div class="space-y-3">
-                            <button onclick="openToolModal('compress-image')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Optimize Image</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                            <button onclick="openToolModal('compress-video')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Optimize Video</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                            <button onclick="openToolModal('compress-audio')" class="w-full p-3 text-sm font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 rounded-xl border border-slate-100 dark:border-slate-800 transition-all text-left flex items-center justify-between">
-                                <span>Optimize Audio</span> <i class="fa-solid fa-chevron-right text-xs"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Coming Soon -->
-                    <div class="bg-slate-100 dark:bg-slate-800/50 rounded-3xl shadow-inner p-8 border border-slate-200 dark:border-slate-800 border-dashed">
-
-                    <div class="w-14 h-14 bg-slate-200 dark:bg-slate-700 text-slate-400 rounded-2xl flex items-center justify-center mb-6">
-                        <i class="fa-solid fa-rocket text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-400 dark:text-slate-500 mb-2">More Power</h3>
-                    <p class="text-slate-400 dark:text-slate-500 text-sm mb-6">We're adding AI summary and Cloud storage sync soon.</p>
-                    <div class="p-4 bg-slate-200/50 dark:bg-slate-700/30 rounded-xl text-center text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-                        Coming Soon
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="mt-20 text-center text-slate-400 dark:text-slate-500 text-sm relative z-10">
-            <p class="mb-2">made with ❤️ by <a href="https://github.com/protonexe" class="text-blue-600 dark:text-blue-400 hover:underline transition-all font-bold">proton</a></p>
-            <p class="mt-2">Powered by <span class="font-semibold text-slate-600 dark:text-slate-400">Proton Engine v2.0</span> &bull; Professional Omni-Conversion</p>
-        </footer>
+  <!-- STEP 3: Progress -->
+  <section id="sectionProgress" class="hidden mt-6 animate-fade-in">
+    <div class="glass rounded-2xl p-6 sm:p-8">
+      <div class="text-center mb-6">
+        <h3 class="text-lg font-bold mb-1" id="progressTitle">Converting...</h3>
+        <p class="text-sm opacity-50" id="progressPhase">Uploading file...</p>
+      </div>
+      <div class="w-full bg-slate-700/30 rounded-full h-3 mb-4 overflow-hidden">
+        <div id="progressBar" class="progress-bar h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+      </div>
+      <div class="flex justify-between text-sm mb-6">
+        <span id="progressPercent" class="font-bold text-brand-400">0%</span>
+        <span id="progressSize" class="opacity-50"></span>
+      </div>
+      <div id="batchProgress" class="hidden space-y-2"></div>
     </div>
+  </section>
 
-    <script>
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('file-input');
-        const configSection = document.getElementById('config-section');
-        const selectedFilename = document.getElementById('selected-filename');
-        const sourceExt = document.getElementById('source-ext');
-        const targetFormatSelect = document.getElementById('target-format');
-        const pathContainer = document.getElementById('path-container');
-        const pathVisual = document.getElementById('path-visual');
-        const convertBtn = document.getElementById('convert-btn');
-        const loadingOverlay = document.getElementById('loading-overlay');
-        const enableOptions = document.getElementById('enable-options');
-        const optionsPanel = document.getElementById('options-panel');
+  <!-- RESULT -->
+  <section id="sectionResult" class="hidden mt-6 animate-fade-in">
+    <div class="glass rounded-2xl p-6 sm:p-8 text-center">
+      <div class="mb-5">
+        <svg class="w-20 h-20 mx-auto" viewBox="0 0 80 80">
+          <circle class="checkmark-circle" cx="40" cy="40" r="36" fill="none" stroke="#22c55e" stroke-width="4"/>
+          <path class="checkmark-check" d="M24 40l10 10 22-22" fill="none" stroke="#22c55e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-1">Conversion Complete!</h3>
+      <p class="text-sm opacity-50 mb-6" id="resultInfo"></p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button id="btnDownload" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition shadow-lg shadow-green-600/20">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download
+        </button>
+        <button id="btnConvertAnother" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-slate-500/30 font-semibold hover:bg-slate-500/10 transition">
+          Convert Another
+        </button>
+      </div>
+    </div>
+  </section>
 
-        // Tool Modal Elements
-        const toolModal = document.getElementById('tool-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalBody = document.getElementById('modal-body');
-        const modalExecuteBtn = document.getElementById('modal-execute-btn');
+  <!-- History -->
+  <section id="sectionHistory" class="mt-8">
+    <button id="btnToggleHistory" class="flex items-center gap-2 text-sm font-semibold opacity-50 hover:opacity-80 transition mb-3">
+      <svg class="w-4 h-4 transition-transform" id="historyChevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+      Recent Conversions
+    </button>
+    <div id="historyList" class="hidden space-y-2"></div>
+  </section>
+</div>
 
-        // Tab Management
-        const tabConvert = document.getElementById('tab-convert');
-        const tabTools = document.getElementById('tab-tools');
-        const workspaceConvert = document.getElementById('workspace-convert');
-        const workspaceTools = document.getElementById('workspace-tools');
+<!-- TOOLS TAB -->
+<div id="tabTools" class="hidden">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="toolsGrid"></div>
+</div>
 
-        tabConvert.addEventListener('click', () => {
-            tabConvert.className = 'px-8 py-2.5 rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm';
-            tabTools.className = 'px-8 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200';
-            workspaceConvert.classList.remove('hidden');
-            workspaceTools.classList.add('hidden');
-        });
+</main>
 
-        tabTools.addEventListener('click', () => {
-            tabTools.className = 'px-8 py-2.5 rounded-xl text-sm font-bold transition-all bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm';
-            tabConvert.className = 'px-8 py-2.5 rounded-xl text-sm font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200';
-            workspaceConvert.classList.add('hidden');
-            workspaceTools.classList.remove('hidden');
-        });
+<!-- Tool Modal -->
+<div id="toolModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="toolModalBackdrop"></div>
+  <div class="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-lg font-bold" id="toolModalTitle">Tool</h3>
+      <button id="toolModalClose" class="p-1.5 rounded-lg hover:bg-slate-500/20 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="toolModalBody"></div>
+    <div id="toolModalProgress" class="hidden mt-4">
+      <div class="w-full bg-slate-700/30 rounded-full h-2.5 mb-2 overflow-hidden">
+        <div id="toolProgressBar" class="progress-bar h-2.5 rounded-full" style="width:0%"></div>
+      </div>
+      <p class="text-sm text-center opacity-60" id="toolProgressText">Processing...</p>
+    </div>
+    <div id="toolModalResult" class="hidden mt-4 text-center"></div>
+  </div>
+</div>
 
-        // Tool Modal Logic
-        let activeToolId = null;
+<footer class="border-t border-slate-700/20 py-4 text-center text-xs opacity-40">
+  Made with love by proton · <a href="https://github.com" target="_blank" class="underline hover:opacity-80">GitHub</a>
+</footer>
 
-        function openToolModal(toolId) {
-            activeToolId = toolId;
-            modalTitle.textContent = toolId.replace('-', ' ').toUpperCase();
-            modalBody.innerHTML = '';
-            
-            // File input (Always needed)
-            const isMultiFile = ['pdf-merge', 'audio-merge'].includes(toolId);
-            const fileInputHtml = `
-                <div class="space-y-2">
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Select File${isMultiFile ? 's' : ''}</label>
-                    <input type="file" id="tool-file-input" ${isMultiFile ? 'multiple' : ''} 
-                        class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100">
-                </div>
-            `;
-            modalBody.innerHTML += fileInputHtml;
+<script>
+(function() {
+  'use strict';
 
-            // Tool-specific options
-            let optionsHtml = '';
-            if (toolId === 'pdf-split') {
-                optionsHtml = `
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Page Range (e.g. 1-5)</label>
-                        <input type="text" data-opt="page_range" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="1-5">
-                    </div>
-                `;
-            } else if (toolId === 'pdf-rotate') {
-                optionsHtml = `
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Degrees (90, 180, 270)</label>
-                        <input type="number" data-opt="degrees" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="90">
-                    </div>
-                `;
-            } else if (toolId === 'audio-trim') {
-                optionsHtml = `
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Start (ms)</label>
-                            <input type="number" data-opt="start_ms" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="0">
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">End (ms)</label>
-                            <input type="number" data-opt="end_ms" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="Auto">
-                        </div>
-                    </div>
-                `;
-            } else if (toolId === 'audio-volume') {
-                optionsHtml = `
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Gain (dB)</label>
-                        <input type="number" data-opt="gain" class="w-full p-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="0">
-                    </div>
-                `;
-            } else if (toolId.startsWith('compress-')) {
-                optionsHtml = `
-                    <div class="space-y-3">
-                        <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Compression Level</label>
-                        <div class="flex gap-3">
-                            ${['low', 'medium', 'high'].map(lvl => `
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" name="level" data-opt="level" value="${lvl}" ${lvl === 'medium' ? 'checked' : ''} class="hidden peer">
-                                    <div class="text-center p-2 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition-all">
-                                        ${lvl.toUpperCase()}
-                                    </div>
-                                </label>
-                            `).join('')}
-                        </div>
-                        <p class="text-[10px] text-slate-400 dark:text-slate-500 italic">
-                            Highest quality, largest file
-                        </p>
-                    </div>
-                `;
-            }
-            modalBody.innerHTML += optionsHtml;
-            toolModal.classList.remove('hidden');
+  const $ = s => document.querySelector(s);
+  const $$ = s => document.querySelectorAll(s);
+
+  // ─── State ────────────────────────────────────────
+  const state = {
+    files: [],
+    compatibleFormats: {},
+    categories: {},
+    selectedCategory: '',
+    selectedFormat: '',
+    selectedExt: '',
+    taskId: null,
+    batchId: null,
+    isBatch: false,
+    activeTab: 'convert',
+    toolModalData: null,
+    history: [],
+    presets: [],
+  };
+
+  const TOOLS = [
+    { id:'pdf_merge', name:'PDF Merge', desc:'Combine multiple PDFs into one', icon:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', accept:'.pdf', multiple:true },
+    { id:'pdf_split', name:'PDF Split', desc:'Split PDF into multiple files', icon:'M8 7h12m0 0l-4-4m4 4l-4 4m4 2H4m0 0l4 4m-4-4l4-4', accept:'.pdf', multiple:false },
+    { id:'pdf_rotate', name:'PDF Rotate', desc:'Rotate PDF pages', icon:'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', accept:'.pdf', multiple:false },
+    { id:'audio_trim', name:'Audio Trim', desc:'Cut audio to desired length', icon:'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z', accept:'audio/*', multiple:false },
+    { id:'audio_merge', name:'Audio Merge', desc:'Join audio files together', icon:'M12 6v6m0 0v6m0-6h6m-6 0H6', accept:'audio/*', multiple:true },
+    { id:'audio_volume', name:'Audio Volume', desc:'Adjust audio volume/gain', icon:'M15.536 8.464a5 5 0 010 7.072M12 6l-4 4H4v4h4l4 4V6z', accept:'audio/*', multiple:false },
+    { id:'compress_image', name:'Compress Image', desc:'Reduce image file size', icon:'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z', accept:'image/*', multiple:false },
+    { id:'compress_video', name:'Compress Video', desc:'Reduce video file size', icon:'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z', accept:'video/*', multiple:false },
+    { id:'compress_audio', name:'Compress Audio', desc:'Reduce audio file size', icon:'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3', accept:'audio/*', multiple:false },
+  ];
+
+  // ─── Theme ────────────────────────────────────────
+  function initTheme() {
+    const saved = localStorage.getItem('proton-theme');
+    if (saved === 'light') {
+      document.documentElement.classList.remove('dark');
+      $('#iconSun').classList.remove('hidden');
+      $('#iconMoon').classList.add('hidden');
+    }
+  }
+  function toggleTheme() {
+    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    localStorage.setItem('proton-theme', isDark ? 'dark' : 'light');
+    $('#iconSun').classList.toggle('hidden', isDark);
+    $('#iconMoon').classList.toggle('hidden', !isDark);
+  }
+  initTheme();
+  $('#themeToggle').addEventListener('click', toggleTheme);
+
+  // ─── Tabs ─────────────────────────────────────────
+  $$('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      state.activeTab = tab.dataset.tab;
+      $$('.nav-tab').forEach(t => {
+        t.classList.toggle('bg-brand-600', t.dataset.tab === state.activeTab);
+        t.classList.toggle('text-white', t.dataset.tab === state.activeTab);
+        t.classList.toggle('text-slate-400', t.dataset.tab !== state.activeTab);
+      });
+      $('#tabConvert').classList.toggle('hidden', state.activeTab !== 'convert');
+      $('#tabTools').classList.toggle('hidden', state.activeTab !== 'tools');
+    });
+  });
+  $$('.nav-tab')[0].click();
+
+  // ─── File Upload ──────────────────────────────────
+  const dropZone = $('#dropZone');
+  const fileInput = $('#fileInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drop-zone-active'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-zone-active'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drop-zone-active');
+    handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+  function handleFiles(fileList) {
+    state.files = Array.from(fileList);
+    if (state.files.length === 0) return;
+    $('#uploadPlaceholder').classList.add('hidden');
+    $('#uploadFileInfo').classList.remove('hidden');
+    const totalSize = state.files.reduce((s,f) => s+f.size, 0);
+    const isBatch = state.files.length > 1;
+    state.isBatch = isBatch;
+    let html = '';
+    if (isBatch) {
+      html = `<p class="font-bold text-base">${state.files.length} files selected</p><p class="text-sm opacity-50">${formatBytes(totalSize)} total</p>`;
+      html += '<div class="mt-2 max-h-32 overflow-y-auto text-left text-xs space-y-1">';
+      state.files.forEach(f => {
+        html += `<div class="flex items-center gap-2 opacity-60"><span class="truncate max-w-[200px]">${esc(f.name)}</span><span class="opacity-40">${formatBytes(f.size)}</span></div>`;
+      });
+      html += '</div>';
+    } else {
+      const f = state.files[0];
+      html = `<p class="font-bold text-base truncate max-w-xs">${esc(f.name)}</p>`;
+      html += `<p class="text-sm opacity-50">${formatBytes(f.size)} · ${f.type || 'unknown type'}</p>`;
+    }
+    $('#fileDetails').innerHTML = html;
+    goToStep(2);
+    loadCompatibleFormats();
+  }
+
+  $('#btnClearFiles').addEventListener('click', e => {
+    e.stopPropagation();
+    resetState();
+  });
+
+  function resetState() {
+    state.files = [];
+    state.selectedFormat = '';
+    state.selectedExt = '';
+    state.selectedCategory = '';
+    state.taskId = null;
+    state.batchId = null;
+    state.isBatch = false;
+    fileInput.value = '';
+    $('#uploadPlaceholder').classList.remove('hidden');
+    $('#uploadFileInfo').classList.add('hidden');
+    goToStep(1);
+    $('#sectionFormat').classList.add('hidden');
+    $('#sectionProgress').classList.add('hidden');
+    $('#sectionResult').classList.add('hidden');
+  }
+
+  // ─── Steps ────────────────────────────────────────
+  function goToStep(n) {
+    $$('.step-indicator').forEach(el => {
+      const s = parseInt(el.dataset.step);
+      const circle = el.querySelector('div');
+      const label = el.querySelector('span');
+      if (s < n) {
+        circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-green-500 text-white';
+        circle.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+        if(label) { label.classList.remove('opacity-50'); label.classList.add('opacity-100'); }
+      } else if (s === n) {
+        circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-brand-600 text-white';
+        circle.textContent = s;
+        if(label) { label.classList.remove('opacity-50'); label.classList.add('opacity-100'); }
+      } else {
+        circle.className = 'w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 bg-slate-600/30 text-slate-400';
+        circle.textContent = s;
+        if(label) { label.classList.add('opacity-50'); label.classList.remove('opacity-100'); }
+      }
+    });
+    $$('.step-line').forEach(el => {
+      const l = parseInt(el.dataset.line);
+      el.className = l < n ? 'w-8 h-px bg-green-500/50 step-line transition-all duration-300' : 'w-8 h-px bg-slate-600/30 step-line transition-all duration-300';
+    });
+  }
+
+  // ─── Load Compatible Formats ──────────────────────
+  async function loadCompatibleFormats() {
+    const ext = state.files[0]?.name.split('.').pop()?.toLowerCase();
+    if (!ext) return;
+    try {
+      const [catRes, fmtRes, presetRes] = await Promise.all([
+        fetch('/api/categories'),
+        fetch(`/api/compatible/${ext}`),
+        fetch('/api/presets'),
+      ]);
+      state.categories = await catRes.json();
+      state.compatibleFormats = await fmtRes.json();
+      state.presets = await presetRes.json();
+      renderFormatSelector(ext);
+      $('#sectionFormat').classList.remove('hidden');
+      $('#sectionFormat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (err) {
+      console.error('Failed to load formats:', err);
+    }
+  }
+
+  function renderFormatSelector(sourceExt) {
+    const cats = Object.keys(state.compatibleFormats);
+    const tabsEl = $('#categoryTabs');
+    const chipsEl = $('#formatChips');
+    const flowEl = $('#flowDiagram');
+
+    flowEl.textContent = `${sourceExt.toUpperCase()} → ???`;
+
+    const catIcons = { Image:'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14', Video:'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z', Audio:'M9 19V6l12-3v13', Document:'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', Data:'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z M8 4v3 M12 4v3 M16 4v3 M8 10h8 M8 14h5' };
+
+    tabsEl.innerHTML = '';
+    cats.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-slate-600/20 hover:bg-slate-600/30';
+      btn.dataset.cat = cat;
+      btn.textContent = cat;
+      btn.addEventListener('click', () => selectCategory(cat));
+      tabsEl.appendChild(btn);
+    });
+
+    if (cats.length > 0) selectCategory(cats[0]);
+
+    function selectCategory(cat) {
+      state.selectedCategory = cat;
+      state.selectedFormat = '';
+      state.selectedExt = '';
+      $$('#categoryTabs button').forEach(b => {
+        b.classList.toggle('tab-active', b.dataset.cat === cat);
+      });
+      chipsEl.innerHTML = '';
+      const formats = state.compatibleFormats[cat] || [];
+      formats.forEach(fmt => {
+        const chip = document.createElement('button');
+        chip.className = 'chip px-4 py-2 rounded-xl text-sm font-semibold border border-slate-500/20 bg-slate-700/30 hover:bg-brand-600/20 hover:border-brand-500/40 transition';
+        chip.textContent = fmt.label || fmt.ext;
+        chip.dataset.ext = fmt.ext;
+        chip.dataset.label = fmt.label || fmt.ext;
+        chip.addEventListener('click', () => selectFormat(fmt));
+        chipsEl.appendChild(chip);
+      });
+      renderPresets();
+      renderSettings();
+      updateConvertButton();
+    }
+
+    function selectFormat(fmt) {
+      state.selectedFormat = fmt.label || fmt.ext;
+      state.selectedExt = fmt.ext;
+      $$('#formatChips .chip').forEach(c => {
+        c.classList.toggle('chip-selected', c.dataset.ext === fmt.ext);
+      });
+      flowEl.textContent = `${sourceExt.toUpperCase()} → ${fmt.ext.toUpperCase()}`;
+      renderSettings();
+      updateConvertButton();
+    }
+  }
+
+  function renderPresets() {
+    const el = $('#presetButtons');
+    el.innerHTML = '';
+    if (!state.presets || state.presets.length === 0) return;
+    const pIcons = { iPhone:'M12 18h.01 M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z', Android:'M12 18h.01 M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z', Web:'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', Discord:'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' };
+    state.presets.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700/40 hover:bg-brand-600/20 border border-slate-500/20 hover:border-brand-500/30 transition flex items-center gap-1.5';
+      btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="${pIcons[p.name]||pIcons.Web}" stroke-linecap="round" stroke-linejoin="round"/></svg>${esc(p.name)}`;
+      btn.addEventListener('click', () => applyPreset(p));
+      el.appendChild(btn);
+    });
+  }
+
+  function applyPreset(preset) {
+    if (preset.format) {
+      const fmts = Object.values(state.compatibleFormats).flat();
+      const match = fmts.find(f => f.ext === preset.format || (f.label||'').toLowerCase() === (preset.format||'').toLowerCase());
+      if (match) {
+        state.selectedFormat = match.label || match.ext;
+        state.selectedExt = match.ext;
+        $$('#formatChips .chip').forEach(c => c.classList.toggle('chip-selected', c.dataset.ext === match.ext));
+        const src = state.files[0]?.name.split('.').pop()?.toUpperCase();
+        $('#flowDiagram').textContent = `${src} → ${match.ext.toUpperCase()}`;
+      }
+    }
+    if (preset.options) {
+      Object.entries(preset.options).forEach(([k,v]) => {
+        const inp = $(`#opt_${k}`);
+        if (inp) {
+          inp.value = v;
+          if(inp.type === 'checkbox') inp.checked = v;
         }
+      });
+    }
+    renderSettings();
+    updateConvertButton();
+  }
 
-        function closeToolModal() {
-            toolModal.classList.add('hidden');
+  function renderSettings() {
+    const ext = state.selectedExt?.toLowerCase() || '';
+    const panel = $('#settingsPanel');
+    const content = $('#settingsContent');
+    const isImage = ['jpg','jpeg','png','gif','webp','bmp','tiff','svg','avif'].includes(ext);
+    const isVideo = ['mp4','avi','mov','mkv','webm','flv','wmv','m4v','3gp'].includes(ext);
+    const isAudio = ['mp3','wav','ogg','flac','aac','wma','m4a','opus'].includes(ext);
+    const isDoc = ['pdf','docx','doc','txt','html','md'].includes(ext);
+
+    if (!isImage && !isVideo && !isAudio && !isDoc) {
+      panel.classList.add('hidden');
+      return;
+    }
+    panel.classList.remove('hidden');
+    let html = '';
+
+    if (isImage) {
+      html = `
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs font-semibold opacity-50 mb-1">Width (px)</label><input id="opt_width" type="number" placeholder="Auto" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm focus:outline-none focus:border-brand-500 transition"></div>
+          <div><label class="block text-xs font-semibold opacity-50 mb-1">Height (px)</label><input id="opt_height" type="number" placeholder="Auto" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm focus:outline-none focus:border-brand-500 transition"></div>
+        </div>
+        <div><label class="block text-xs font-semibold opacity-50 mb-1">Quality: <span id="qualityVal">85</span>%</label>
+        <input id="opt_quality" type="range" min="1" max="100" value="85" class="w-full accent-brand-600" oninput="document.getElementById('qualityVal').textContent=this.value"></div>`;
+    } else if (isVideo) {
+      html = `
+        <div><label class="block text-xs font-semibold opacity-50 mb-1">Bitrate</label>
+        <select id="opt_bitrate" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm focus:outline-none focus:border-brand-500">
+          <option value="">Auto</option><option value="500k">500 kbps</option><option value="1000k">1 Mbps</option><option value="2000k">2 Mbps</option><option value="5000k">5 Mbps</option><option value="8000k">8 Mbps</option></select></div>
+        <div><label class="block text-xs font-semibold opacity-50 mb-1">Resolution</label>
+        <select id="opt_resolution" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm focus:outline-none focus:border-brand-500">
+          <option value="">Original</option><option value="3840x2160">4K (3840×2160)</option><option value="1920x1080">1080p (1920×1080)</option><option value="1280x720">720p (1280×720)</option><option value="854x480">480p (854×480)</option><option value="640x360">360p (640×360)</option></select></div>
+        <div class="flex items-center gap-2"><input id="opt_audio_only" type="checkbox" class="accent-brand-600 rounded"><label for="opt_audio_only" class="text-sm">Extract audio only</label></div>`;
+    } else if (isAudio) {
+      html = `
+        <div><label class="block text-xs font-semibold opacity-50 mb-1">Bitrate</label>
+        <select id="opt_bitrate" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm focus:outline-none focus:border-brand-500">
+          <option value="">Auto</option><option value="64k">64 kbps</option><option value="128k">128 kbps</option><option value="192k">192 kbps</option><option value="256k">256 kbps</option><option value="320k">320 kbps</option></select></div>
+        <div><label class="block text-xs font-semibold opacity-50 mb-1">Volume Gain (dB): <span id="volumeVal">0</span></label>
+        <input id="opt_volume" type="range" min="-20" max="20" value="0" class="w-full accent-brand-600" oninput="document.getElementById('volumeVal').textContent=this.value"></div>`;
+    }
+
+    content.innerHTML = html;
+  }
+
+  function updateConvertButton() {
+    $('#btnConvert').disabled = !state.selectedExt;
+  }
+
+  // ─── Settings Toggle ──────────────────────────────
+  $('#btnToggleSettings').addEventListener('click', () => {
+    const content = $('#settingsContent');
+    const chevron = $('#settingsChevron');
+    const isOpen = !content.classList.contains('hidden');
+    content.classList.toggle('hidden');
+    chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  });
+
+  // ─── Convert ──────────────────────────────────────
+  $('#btnConvert').addEventListener('click', startConversion);
+
+  async function startConversion() {
+    if (!state.selectedExt || state.files.length === 0) return;
+    goToStep(3);
+    $('#sectionFormat').classList.add('hidden');
+    $('#sectionProgress').classList.remove('hidden');
+    $('#sectionResult').classList.add('hidden');
+    $('#progressBar').style.width = '0%';
+    $('#progressPercent').textContent = '0%';
+    $('#progressPhase').textContent = 'Uploading file...';
+    $('#progressSize').textContent = '';
+
+    const opts = collectOptions();
+
+    try {
+      if (state.isBatch) {
+        const fd = new FormData();
+        state.files.forEach(f => fd.append('files', f));
+        fd.append('target_format', state.selectedExt);
+        fd.append('options', JSON.stringify(opts));
+        const res = await fetch('/api/convert-batch', { method:'POST', body: fd });
+        const data = await res.json();
+        state.batchId = data.batch_id;
+        renderBatchProgress(data.files || []);
+        pollBatchStatus();
+      } else {
+        const fd = new FormData();
+        fd.append('file', state.files[0]);
+        fd.append('target_format', state.selectedExt);
+        fd.append('options', JSON.stringify(opts));
+        const res = await fetch('/api/convert', { method:'POST', body: fd });
+        const data = await res.json();
+        state.taskId = data.task_id;
+        connectWebSocket(state.taskId);
+        pollTaskStatus(state.taskId);
+      }
+    } catch (err) {
+      console.error('Convert error:', err);
+      $('#progressPhase').textContent = 'Error: ' + err.message;
+    }
+  }
+
+  function collectOptions() {
+    const opts = {};
+    const els = $$('#settingsContent input, #settingsContent select');
+    els.forEach(el => {
+      const key = el.id.replace('opt_', '');
+      if (el.type === 'checkbox') opts[key] = el.checked;
+      else if (el.value !== '' && el.value !== null) opts[key] = el.value;
+    });
+    return opts;
+  }
+
+  function renderBatchProgress(files) {
+    const el = $('#batchProgress');
+    el.classList.remove('hidden');
+    el.innerHTML = files.map(f => `
+      <div class="flex items-center gap-3 p-2 rounded-lg bg-slate-800/30" data-file-id="${f.id||''}">
+        <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse batch-dot"></div>
+        <span class="text-sm truncate flex-1">${esc(f.name||'File')}</span>
+        <span class="text-xs opacity-50 batch-file-status">Waiting...</span>
+      </div>
+    `).join('');
+  }
+
+  // ─── WebSocket ────────────────────────────────────
+  function connectWebSocket(taskId) {
+    try {
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const ws = new WebSocket(`${proto}//${location.host}/ws/status/${taskId}`);
+      ws.onmessage = e => {
+        try {
+          const data = JSON.parse(e.data);
+          updateProgressUI(data);
+          if (data.status === 'done' || data.status === 'error') {
+            ws.close();
+            if (data.status === 'done') showResult();
+          }
+        } catch(_){}
+      };
+      ws.onerror = () => {};
+      ws.onclose = () => {};
+    } catch(_) {}
+  }
+
+  function pollTaskStatus(taskId) {
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/status/${taskId}`);
+        const data = await res.json();
+        updateProgressUI(data);
+        if (data.status === 'done') { showResult(); return; }
+        if (data.status === 'error') { $('#progressPhase').textContent = 'Error: ' + (data.error||'Unknown'); return; }
+        setTimeout(poll, 1000);
+      } catch(_) { setTimeout(poll, 2000); }
+    };
+    setTimeout(poll, 2000);
+  }
+
+  function pollBatchStatus() {
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/batch-status/${state.batchId}`);
+        const data = await res.json();
+        const pct = data.progress || 0;
+        $('#progressBar').style.width = pct + '%';
+        $('#progressPercent').textContent = Math.round(pct) + '%';
+        $('#progressPhase').textContent = data.phase || 'Converting...';
+        if (data.files) {
+          data.files.forEach((f,i) => {
+            const dots = $$('.batch-dot');
+            const statuses = $$('.batch-file-status');
+            if(dots[i]) {
+              dots[i].className = 'w-2 h-2 rounded-full batch-dot ' + (f.status==='done'?'bg-green-500':f.status==='error'?'bg-red-500':'bg-yellow-400 animate-pulse');
+            }
+            if(statuses[i]) statuses[i].textContent = f.status === 'done' ? 'Done' : f.status === 'error' ? 'Error' : f.status || '...';
+          });
         }
+        if (data.status === 'done') { showBatchResult(); return; }
+        if (data.status === 'error') { $('#progressPhase').textContent = 'Error: ' + (data.error||'Unknown'); return; }
+        setTimeout(poll, 1000);
+      } catch(_) { setTimeout(poll, 2000); }
+    };
+    setTimeout(poll, 1500);
+  }
 
-        modalExecuteBtn.addEventListener('click', async () => {
-            const fileInput = document.getElementById('tool-file-input');
-            if (!fileInput.files.length) {
-                alert('Please select at least one file!');
-                return;
-            }
+  function updateProgressUI(data) {
+    const pct = data.progress || 0;
+    $('#progressBar').style.width = pct + '%';
+    $('#progressPercent').textContent = Math.round(pct) + '%';
+    const phases = { uploading:'Uploading file...', analyzing:'Analyzing...', converting:'Converting...', finalizing:'Finalizing...', done:'Done!' };
+    $('#progressPhase').textContent = phases[data.phase] || data.phase || 'Converting...';
+    if (data.output_size_fmt) {
+      const srcSize = formatBytes(state.files[0]?.size||0);
+      $('#progressSize').textContent = `${srcSize} → ~${data.output_size_fmt}`;
+    }
+  }
 
-            loadingOverlay.classList.remove('hidden');
-            const formData = new FormData();
-            formData.append('tool_id', activeToolId);
-            
-            for (const file of fileInput.files) {
-                formData.append('files', file);
-            }
+  function showResult() {
+    $('#sectionProgress').classList.add('hidden');
+    $('#sectionResult').classList.remove('hidden');
+    const f = state.files[0];
+    $('#resultInfo').textContent = `${f.name} → ${state.selectedExt.toUpperCase()}`;
+    $('#btnDownload').onclick = () => { window.location.href = `/api/download/${state.taskId}`; };
+    loadHistory();
+  }
 
-            const options = {};
-            modalBody.querySelectorAll('[data-opt]').forEach(input => {
-                const key = input.getAttribute('data-opt');
-                options[key] = input.value;
-            });
-            formData.append('options', JSON.stringify(options));
+  function showBatchResult() {
+    $('#sectionProgress').classList.add('hidden');
+    $('#sectionResult').classList.remove('hidden');
+    $('#resultInfo').textContent = `${state.files.length} files converted`;
+    $('#btnDownload').innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg> Download All as ZIP`;
+    $('#btnDownload').onclick = () => { window.location.href = `/api/batch-zip/${state.batchId}`; };
+    loadHistory();
+  }
 
-            try {
-                const res = await fetch('/tool/execute', { method: 'POST', body: formData });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || 'Tool execution failed');
-                }
-                const { task_id } = await res.json();
-                
-                // Use WebSocket for progress
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const ws = new WebSocket(`${protocol}//${window.location.host}/ws/status/${task_id}`);
-                
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    const progressText = document.querySelector('#loading-overlay p.mt-6');
-                    if (progressText) progressText.textContent = `Executing tool... ${data.progress}%`;
-                    
-                    if (data.status === 'completed') {
-                        window.location.href = `/download/${task_id}`;
-                        ws.close();
-                        closeToolModal();
-                    } else if (data.status === 'failed') {
-                        alert('Tool execution failed!');
-                        loadingOverlay.classList.add('hidden');
-                        ws.close();
-                    }
-                };
-                ws.onerror = (e) => {
-                    console.error("WS Error", e);
-                    pollToolStatus(task_id);
-                };
-            } catch (e) {
-                alert(`Error: ${e.message}`);
-                loadingOverlay.classList.add('hidden');
-            }
-        });
+  $('#btnConvertAnother').addEventListener('click', resetState);
 
-        async function pollToolStatus(task_id) {
-            let completed = false;
-            while (!completed) {
-                const statusRes = await fetch(`/status/${task_id}`);
-                const statusData = await statusRes.json();
-                if (statusData.status === 'completed') {
-                    completed = true;
-                    window.location.href = `/download/${task_id}`;
-                } else if (statusData.status === 'failed') {
-                    alert('Tool execution failed!');
-                    loadingOverlay.classList.add('hidden');
-                    break;
-                } else {
-                    await new Promise(r => setTimeout(r, 2000));
-                }
-            }
+  // ─── History ──────────────────────────────────────
+  $('#btnToggleHistory').addEventListener('click', () => {
+    const list = $('#historyList');
+    const chevron = $('#historyChevron');
+    const isOpen = !list.classList.contains('hidden');
+    list.classList.toggle('hidden');
+    chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+    if (!isOpen) loadHistory();
+  });
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      const items = (data.history || data || []).slice(0, 10);
+      state.history = items;
+      renderHistory();
+    } catch(_) {}
+  }
+
+  function renderHistory() {
+    const el = $('#historyList');
+    if (state.history.length === 0) {
+      el.innerHTML = '<p class="text-sm opacity-30 py-2">No recent conversions</p>';
+      return;
+    }
+    el.innerHTML = state.history.map(h => {
+      const dot = h.status === 'done' ? 'bg-green-500' : h.status === 'error' ? 'bg-red-500' : 'bg-yellow-400';
+      return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/20 hover:bg-slate-800/30 transition">
+        <div class="w-2 h-2 rounded-full ${dot} flex-shrink-0"></div>
+        <span class="text-sm truncate flex-1 font-medium">${esc(h.filename || h.name || 'File')}</span>
+        <span class="text-xs opacity-40 hidden sm:block">${h.source_format?.toUpperCase()||''} → ${h.target_format?.toUpperCase()||''}</span>
+        <span class="text-xs opacity-30 hidden sm:block">${h.time || h.created_at || ''}</span>
+        ${h.status === 'done' ? `<button class="text-xs text-brand-400 hover:text-brand-300 font-semibold" onclick="window.location.href='/api/download/${h.task_id||h.id}'">Download</button>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ─── Tools ────────────────────────────────────────
+  function renderTools() {
+    const grid = $('#toolsGrid');
+    grid.innerHTML = TOOLS.map(t => `
+      <button class="glass rounded-2xl p-5 text-left hover:border-brand-500/30 transition group" data-tool="${t.id}">
+        <div class="w-12 h-12 rounded-xl bg-brand-600/15 flex items-center justify-center mb-3 group-hover:bg-brand-600/25 transition">
+          <svg class="w-6 h-6 text-brand-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="${t.icon}" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h4 class="font-bold mb-0.5">${esc(t.name)}</h4>
+        <p class="text-xs opacity-50">${esc(t.desc)}</p>
+      </button>
+    `).join('');
+
+    grid.querySelectorAll('[data-tool]').forEach(btn => {
+      btn.addEventListener('click', () => openToolModal(btn.dataset.tool));
+    });
+  }
+  renderTools();
+
+  function openToolModal(toolId) {
+    const tool = TOOLS.find(t => t.id === toolId);
+    if (!tool) return;
+    state.toolModalData = { tool, taskId: null };
+    $('#toolModalTitle').textContent = tool.name;
+    $('#toolModalProgress').classList.add('hidden');
+    $('#toolModalResult').classList.add('hidden');
+
+    let bodyHtml = `
+      <p class="text-sm opacity-50 mb-4">${esc(tool.desc)}</p>
+      <div class="border-2 border-dashed border-slate-500/30 rounded-xl p-6 text-center cursor-pointer hover:border-brand-500/40 transition" id="toolDropZone">
+        <input type="file" id="toolFileInput" accept="${tool.accept}" ${tool.multiple?'multiple':''} class="hidden">
+        <svg class="w-10 h-10 mx-auto mb-2 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5l5 5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p class="text-sm font-semibold">Drop file${tool.multiple?'s':''} here or click</p>
+        <p class="text-xs opacity-40 mt-1">${tool.accept}</p>
+      </div>
+      <div id="toolSelectedFiles" class="mt-3 text-sm hidden"></div>`;
+
+    if (tool.id === 'pdf_rotate') {
+      bodyHtml += `
+        <div class="mt-4"><label class="block text-xs font-semibold opacity-50 mb-1">Rotation</label>
+        <select id="toolOpt_rotation" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm">
+          <option value="90">90° Clockwise</option><option value="180">180°</option><option value="270">270° Clockwise</option></select></div>`;
+    } else if (tool.id === 'audio_trim') {
+      bodyHtml += `
+        <div class="grid grid-cols-2 gap-3 mt-4">
+          <div><label class="block text-xs font-semibold opacity-50 mb-1">Start (seconds)</label><input id="toolOpt_start" type="number" value="0" min="0" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm"></div>
+          <div><label class="block text-xs font-semibold opacity-50 mb-1">End (seconds)</label><input id="toolOpt_end" type="number" value="60" min="0" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm"></div>
+        </div>`;
+    } else if (tool.id === 'audio_volume') {
+      bodyHtml += `
+        <div class="mt-4"><label class="block text-xs font-semibold opacity-50 mb-1">Volume Gain (dB): <span id="toolVolVal">0</span></label>
+        <input id="toolOpt_volume" type="range" min="-20" max="20" value="0" class="w-full accent-brand-600" oninput="document.getElementById('toolVolVal').textContent=this.value"></div>`;
+    } else if (tool.id === 'compress_image' || tool.id === 'compress_video' || tool.id === 'compress_audio') {
+      bodyHtml += `
+        <div class="mt-4"><label class="block text-xs font-semibold opacity-50 mb-1">Quality</label>
+        <select id="toolOpt_quality" class="w-full px-3 py-2 rounded-xl bg-slate-800/50 border border-slate-600/20 text-sm">
+          <option value="low">Low (smaller file)</option><option value="medium" selected>Medium</option><option value="high">High quality</option></select></div>`;
+    }
+
+    bodyHtml += `<button id="toolExecuteBtn" disabled class="mt-4 w-full py-3 rounded-xl bg-brand-600 text-white font-bold hover:bg-brand-700 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Execute
+    </button>`;
+
+    $('#toolModalBody').innerHTML = bodyHtml;
+    $('#toolModal').classList.remove('hidden');
+
+    const toolFileInput = $('#toolFileInput');
+    const toolDropZone = $('#toolDropZone');
+    toolDropZone.addEventListener('click', () => toolFileInput.click());
+    toolDropZone.addEventListener('dragover', e => { e.preventDefault(); toolDropZone.classList.add('drop-zone-active'); });
+    toolDropZone.addEventListener('dragleave', () => toolDropZone.classList.remove('drop-zone-active'));
+    toolDropZone.addEventListener('drop', e => { e.preventDefault(); toolDropZone.classList.remove('drop-zone-active'); handleToolFiles(e.dataTransfer.files); });
+    toolFileInput.addEventListener('change', () => handleToolFiles(toolFileInput.files));
+
+    function handleToolFiles(files) {
+      state.toolModalData.files = Array.from(files);
+      const el = $('#toolSelectedFiles');
+      el.classList.remove('hidden');
+      if (files.length === 1) {
+        el.innerHTML = `<span class="font-semibold">${esc(files[0].name)}</span> <span class="opacity-40">(${formatBytes(files[0].size)})</span>`;
+      } else {
+        el.innerHTML = `<span class="font-semibold">${files.length} files</span> <span class="opacity-40">(${formatBytes(Array.from(files).reduce((s,f)=>s+f.size,0))})</span>`;
+      }
+      $('#toolExecuteBtn').disabled = false;
+    }
+
+    $('#toolExecuteBtn').addEventListener('click', executeTool);
+  }
+
+  async function executeTool() {
+    const d = state.toolModalData;
+    if (!d || !d.files || d.files.length === 0) return;
+    const btn = $('#toolExecuteBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Processing...';
+    $('#toolModalProgress').classList.remove('hidden');
+    $('#toolModalResult').classList.add('hidden');
+    $('#toolProgressBar').style.width = '10%';
+    $('#toolProgressText').textContent = 'Uploading...';
+
+    const opts = {};
+    $$('#toolModalBody input[type="number"], #toolModalBody select').forEach(el => {
+      const k = el.id.replace('toolOpt_','');
+      if (el.value !== '') opts[k] = el.value;
+    });
+
+    try {
+      const fd = new FormData();
+      d.files.forEach(f => fd.append('files', f));
+      fd.append('tool_id', d.tool.id);
+      fd.append('options', JSON.stringify(opts));
+      const res = await fetch('/api/tool/execute', { method:'POST', body: fd });
+      const data = await res.json();
+      d.taskId = data.task_id;
+      $('#toolProgressBar').style.width = '40%';
+      $('#toolProgressText').textContent = 'Processing...';
+      pollToolStatus();
+    } catch(err) {
+      $('#toolProgressText').textContent = 'Error: ' + err.message;
+      btn.disabled = false;
+      btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/></svg> Execute';
+    }
+  }
+
+  function pollToolStatus() {
+    const d = state.toolModalData;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/status/${d.taskId}`);
+        const data = await res.json();
+        const pct = data.progress || 0;
+        $('#toolProgressBar').style.width = Math.min(30 + pct * 0.7, 100) + '%';
+        $('#toolProgressText').textContent = data.phase || 'Processing...';
+        if (data.status === 'done') {
+          $('#toolProgressBar').style.width = '100%';
+          $('#toolProgressText').textContent = 'Done!';
+          $('#toolModalResult').classList.remove('hidden');
+          $('#toolModalResult').innerHTML = `
+            <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+              <p class="font-bold text-green-400 mb-2">Processing Complete!</p>
+              <button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition" onclick="window.location.href='/api/download/${d.taskId}'">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Download
+              </button>
+            </div>`;
+          $('#toolExecuteBtn').classList.add('hidden');
+          return;
         }
-
-        // Dark Mode Toggle
-        const themeToggle = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
-        
-        themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            themeIcon.className = isDark ? 'fa-solid fa-sun text-xl' : 'fa-solid fa-moon text-xl';
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        });
-
-        // Load saved theme
-        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            themeIcon.className = 'fa-solid fa-sun text-xl';
+        if (data.status === 'error') {
+          $('#toolProgressText').textContent = 'Error: ' + (data.error || 'Unknown');
+          $('#toolExecuteBtn').disabled = false;
+          $('#toolExecuteBtn').innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke-linecap="round" stroke-linejoin="round"/></svg> Execute';
+          return;
         }
+        setTimeout(poll, 1000);
+      } catch(_) { setTimeout(poll, 2000); }
+    };
+    setTimeout(poll, 1500);
+  }
 
-        let currentFile = null;
+  $('#toolModalClose').addEventListener('click', () => { $('#toolModal').classList.add('hidden'); });
+  $('#toolModalBackdrop').addEventListener('click', () => { $('#toolModal').classList.add('hidden'); });
 
-        async function loadHistory() {
-            try {
-                const res = await fetch('/history');
-                const data = await res.json();
-                const list = document.getElementById('history-list');
-                
-                if (!data.history || data.history.length === 0) {
-                    list.innerHTML = '<p class="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">No recent conversions.</p>';
-                    return;
-                }
-                
-                let html = '';
-                data.history.forEach(item => {
-                    const statusColor = {
-                        'pending': 'text-yellow-500',
-                        'processing': 'text-blue-500',
-                        'SUCCESS': 'text-green-500',
-                        'completed': 'text-green-500',
-                        'FAILURE': 'text-red-500',
-                        'failed': 'text-red-500'
-                    }[item.status] || 'text-slate-500';
-                    
-                    const statusIcon = {
-                        'pending': 'fa-spinner fa-spin',
-                        'processing': 'fa-spinner fa-spin',
-                        'SUCCESS': 'fa-circle-check',
-                        'completed': 'fa-circle-check',
-                        'FAILURE': 'fa-circle-xmark',
-                        'failed': 'fa-circle-xmark'
-                    }[item.status] || 'fa-circle';
-                    
-                    const filename = item.filename.length > 25 ? item.filename.substring(0, 22) + '...' : item.filename;
-                    const date = new Date(item.timestamp * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  // ─── History Toggle (init) ────────────────────────
+  loadHistory();
 
-                    html += `
-                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-700 transition-all">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <i class="fa-solid ${statusIcon} ${statusColor} text-xs"></i>
-                                <div class="overflow-hidden">
-                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">${filename}</p>
-                                    <p class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">.${item.target} &bull; ${date}</p>
-                                </div>
-                            </div>
-                            ${item.status === 'completed' || item.status === 'SUCCESS' ? 
-                                `<a href="/download/${item.task_id}" class="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors" title="Download">
-                                    <i class="fa-solid fa-download text-xs"></i>
-                                </a>` : 
-                                `<span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">${item.status}</span>`
-                            }
-                        </div>
-                    `;
-                });
-                list.innerHTML = html;
-            } catch (e) {
-                console.error("Failed to load history", e);
-                document.getElementById('history-list').innerHTML = '<p class="text-xs text-red-400 italic text-center py-4">Could not load history.</p>';
-            }
-        }
-        loadHistory();
-        setInterval(loadHistory, 5000);
+  // ─── Helpers ──────────────────────────────────────
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024, sizes = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-        async function loadFormats() {
-            try {
-                const res = await fetch('/formats');
-                const data = await res.json();
-                const formats = data.formats;
-                
-                const groups = {
-                    "Images": ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "tif", "ico", "eps", "heif", "heic", "avif"],
-                    "Media": ["mp3", "wav", "ogg", "m4a", "flac", "aac", "mp4", "avi", "mkv", "mov", "wmv", "flv", "webm"],
-                    "Documents": ["pdf", "txt", "md", "html"],
-                    "Data": ["json", "csv", "yaml", "yml", "xml"]
-                };
-                
-                let optionsHtml = '<option value="" disabled selected>Select a format...</option>';
-                for (const [group, exts] of Object.entries(groups)) {
-                    optionsHtml += `<optgroup label="${group}">`;
-                    const availableInGroup = formats.filter(f => exts.includes(f));
-                    availableInGroup.forEach(f => {
-                        optionsHtml += `<option value="${f}">${f.toUpperCase()}</option>`;
-                    });
-                    optionsHtml += `</optgroup>`;
-                }
-                
-                const allKnown = Object.values(groups).flat();
-                const others = formats.filter(f => !allKnown.includes(f));
-                if (others.length > 0) {
-                    optionsHtml += `<optgroup label="Others">`;
-                    others.forEach(f => {
-                        optionsHtml += `<option value="${f}">${f.toUpperCase()}</option>`;
-                    });
-                    optionsHtml += `</optgroup>`;
-                }
-                targetFormatSelect.innerHTML = optionsHtml;
-            } catch (e) {
-                console.error("Failed to load formats", e);
-            }
-        }
-        loadFormats();
-
-        function setQuickConvert(fmt) {
-            if (!currentFile) {
-                alert("Please upload a file first!");
-                return;
-            }
-            targetFormatSelect.value = fmt;
-            updatePath();
-        }
-
-        dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drop-zone--over');
-        });
-        ['dragleave', 'dragend'].forEach(type => {
-            dropZone.addEventListener(type, () => dropZone.classList.remove('drop-zone--over'));
-        });
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drop-zone--over');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-        });
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
-        });
-
-        function handleFile(file) {
-            currentFile = file;
-            const ext = file.name.split('.').pop().toLowerCase();
-            selectedFilename.textContent = file.name;
-            sourceExt.textContent = ext;
-            configSection.classList.remove('hidden');
-            const options = Array.from(targetFormatSelect.options);
-            const defaultTarget = options.find(opt => opt.value !== ext) || options[0];
-            targetFormatSelect.value = defaultTarget.value;
-            updatePath();
-        }
-
-        async function updatePath() {
-            const src = sourceExt.textContent;
-            const target = targetFormatSelect.value;
-            if (src === target) {
-                pathContainer.classList.add('hidden');
-                return;
-            }
-            try {
-                const res = await fetch(`/path?src=${src}&target=${target}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    renderPath(data.path);
-                    pathContainer.classList.remove('hidden');
-                } else {
-                    pathContainer.classList.add('hidden');
-                }
-            } catch (e) {
-                pathContainer.classList.add('hidden');
-            }
-        }
-
-        function renderPath(path) {
-            if (path.length === 0) {
-                pathVisual.innerHTML = `<span class="text-slate-400 dark:text-slate-500 italic">Direct conversion (same format)</span>`;
-                return;
-            }
-            let html = `<span class="px-3 py-1 bg-slate-200 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-400">${sourceExt.textContent.toUpperCase()}</span>`;
-            path.forEach(step => {
-                html += `<i class="fa-solid fa-chevron-right text-slate-300 dark:text-slate-600 text-xs"></i>`;
-                html += `<span class="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-sm">${step.target.toUpperCase()}</span>`;
-            });
-            pathVisual.innerHTML = html;
-        }
-
-        targetFormatSelect.addEventListener('change', () => {
-            updatePath();
-            updateOptionsInputs();
-        });
-
-        enableOptions.addEventListener('change', () => {
-            optionsPanel.classList.toggle('hidden', !enableOptions.checked);
-            updateOptionsInputs();
-        });
-
-        function updateOptionsInputs() {
-            const fmt = targetFormatSelect.value.toLowerCase();
-            let html = '';
-            const isImage = ["png", "jpg", "jpeg", "webp", "bmp", "gif", "tiff", "ico"].includes(fmt);
-            const isMedia = ["mp3", "wav", "mp4", "avi", "mkv", "aac", "flac", "ogg"].includes(fmt);
-            if (isImage) {
-                html += `
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Width (px)</label>
-                        <input type="number" data-opt="width" class="w-full p-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="Auto">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Height (px)</label>
-                        <input type="number" data-opt="height" class="w-full p-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="Auto">
-                    </div>
-                    <div class="space-y-2 col-span-full md:col-span-1">
-                        <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Quality (1-100)</label>
-                        <input type="number" data-opt="quality" class="w-full p-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" value="85">
-                    </div>
-                `;
-            } else if (isMedia) {
-                html += `
-                    <div class="space-y-2">
-                        <label class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">Bitrate (e.g. 128k)</label>
-                        <input type="text" data-opt="bitrate" class="w-full p-2 text-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" placeholder="128k">
-                    </div>
-                    <div class="flex items-center space-x-2 py-4">
-                        <input type="checkbox" data-opt="audio_only" class="w-4 h-4 text-blue-600 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900">
-                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Extract Audio Only</label>
-                    </div>
-                `;
-            } else {
-                html = '<p class="text-xs text-slate-400 dark:text-slate-500 italic col-span-full text-center">No advanced options available for this format.</p>';
-            }
-            optionsPanel.innerHTML = html;
-        }
-
-        convertBtn.addEventListener('click', async () => {
-            if (!currentFile) return;
-            loadingOverlay.classList.remove('hidden');
-            const formData = new FormData();
-            formData.append('file', currentFile);
-            formData.append('target_format', targetFormatSelect.value);
-            if (enableOptions.checked) {
-                const options = {};
-                optionsPanel.querySelectorAll('[data-opt]').forEach(input => {
-                    const key = input.getAttribute('data-opt');
-                    const val = input.type === 'checkbox' ? input.checked : input.value;
-                    if (val) options[key] = val;
-                });
-                formData.append('options', JSON.stringify(options));
-            }
-            try {
-                const res = await fetch('/convert', { method: 'POST', body: formData });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || 'Failed to start conversion');
-                }
-                const { task_id } = await res.json();
-                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const ws = new WebSocket(`${protocol}//${window.location.host}/ws/status/${task_id}`);
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    const progressText = document.querySelector('#loading-overlay p.mt-6');
-                    if (progressText) progressText.textContent = `Processing... ${data.progress}%`;
-                    if (data.status === 'completed') {
-                        window.location.href = `/download/${task_id}`;
-                        ws.close();
-                    } else if (data.status === 'failed') {
-                        alert('Conversion failed!');
-                        loadingOverlay.classList.add('hidden');
-                        ws.close();
-                    }
-                };
-                ws.onerror = (e) => {
-                    console.error("WS Error", e);
-                    pollStatus(task_id);
-                };
-            } catch (e) {
-                alert(`Conversion Error: ${e.message}`);
-                loadingOverlay.classList.add('hidden');
-            }
-        });
-
-        async function pollStatus(task_id) {
-            let completed = false;
-            while (!completed) {
-                const statusRes = await fetch(`/status/${task_id}`);
-                const statusData = await statusRes.json();
-                if (statusData.status === 'completed') {
-                    completed = true;
-                    window.location.href = `/download/${task_id}`;
-                } else if (statusData.status === 'failed') {
-                    alert('Conversion failed!');
-                    loadingOverlay.classList.add('hidden');
-                    break;
-                } else {
-                    await new Promise(r => setTimeout(r, 2000));
-                }
-            }
-        }
-    </script>
+})();
+</script>
 </body>
 </html>
