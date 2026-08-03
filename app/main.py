@@ -9,10 +9,11 @@ import threading
 import re
 import subprocess
 import zipfile
+import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, WebSocket, WebSocketDisconnect, BackgroundTasks, Request
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
 
@@ -21,7 +22,18 @@ from app.core.registry_instance import registry
 from app.core.mime import detect_format
 import app.converters
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+log = logging.getLogger("proton")
+
 app = FastAPI(title="Proton Convertor")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    elapsed = (time.time() - start) * 1000
+    log.info(f"{request.method} {request.url.path} -> {response.status_code} ({elapsed:.0f}ms)")
+    return response
 
 # In-memory stores
 tasks_store: Dict[str, Dict[str, Any]] = {}
@@ -162,6 +174,8 @@ def _get_compatible_formats(source_ext: str) -> Dict[str, List[str]]:
 
 def _run_conversion(task_id: str, input_path: Path, target_format: str, output_path: Path, options: dict = None, tool_id: str = None):
     """Background worker that runs the conversion with progress tracking."""
+    log.info(f"[{task_id[:8]}] Starting conversion: {input_path.name} -> {target_format} (tool={tool_id})")
+    log.info(f"[{task_id[:8]}] Input size: {_format_size(input_path.stat().st_size)}, exists={input_path.exists()}")
     with tasks_lock:
         tasks_store[task_id]["status"] = "converting"
         tasks_store[task_id]["progress"] = 5
@@ -172,37 +186,44 @@ def _run_conversion(task_id: str, input_path: Path, target_format: str, output_p
             from app.core.registry_instance import registry as reg
             tool = reg.get_tool(tool_id)
             if not tool:
+                log.error(f"[{task_id[:8]}] Tool '{tool_id}' not found in registry")
                 raise ValueError(f"Tool {tool_id} not found")
+            log.info(f"[{task_id[:8]}] Running tool: {tool_id}")
             with tasks_lock:
                 tasks_store[task_id]["phase"] = "Processing"
                 tasks_store[task_id]["progress"] = 20
             result_path = asyncio.run(tool.convert(input_path, output_path, options=options))
+            log.info(f"[{task_id[:8]}] Tool result: {result_path} (exists={result_path.exists()})")
         else:
             with tasks_lock:
                 tasks_store[task_id]["phase"] = "Analyzing"
                 tasks_store[task_id]["progress"] = 10
 
-            path = engine.find_path(
-                detect_format(input_path) or input_path.suffix[1:].lower(),
-                target_format
-            )
+            src_fmt = detect_format(input_path) or input_path.suffix[1:].lower()
+            log.info(f"[{task_id[:8]}] Detected format: {src_fmt}, finding path to {target_format}")
+            path = engine.find_path(src_fmt, target_format)
             if not path:
-                raise ValueError(f"No conversion path found")
+                log.error(f"[{task_id[:8]}] No conversion path found: {src_fmt} -> {target_format}")
+                raise ValueError(f"No conversion path found from {src_fmt} to {target_format}")
+            log.info(f"[{task_id[:8]}] Path found: {len(path)} steps")
 
             with tasks_lock:
                 tasks_store[task_id]["phase"] = "Converting"
                 tasks_store[task_id]["progress"] = 20
 
             result_path = asyncio.run(engine.convert(input_path, target_format, options=options))
+            log.info(f"[{task_id[:8]}] Conversion result: {result_path} (exists={result_path.exists()})")
 
         with tasks_lock:
             tasks_store[task_id]["progress"] = 90
             tasks_store[task_id]["phase"] = "Finalizing"
 
         if result_path.exists() and result_path != output_path:
+            log.info(f"[{task_id[:8]}] Moving {result_path} -> {output_path}")
             shutil.move(str(result_path), str(output_path))
 
         if not output_path.exists():
+            log.error(f"[{task_id[:8]}] Output file does not exist: {output_path}")
             raise ValueError("Conversion produced no output file")
 
         output_size = output_path.stat().st_size
@@ -216,10 +237,12 @@ def _run_conversion(task_id: str, input_path: Path, target_format: str, output_p
             tasks_store[task_id]["output_size_fmt"] = _format_size(output_size)
 
         _update_history_status(task_id, "completed", str(output_path), output_size)
+        log.info(f"[{task_id[:8]}] Conversion completed: {output_size} bytes")
 
     except Exception as e:
         import traceback
         traceback.print_exc()
+        log.error(f"[{task_id[:8]}] Conversion failed: {e}")
         with tasks_lock:
             tasks_store[task_id]["status"] = "failed"
             tasks_store[task_id]["error"] = str(e)

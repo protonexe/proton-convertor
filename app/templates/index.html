@@ -250,6 +250,19 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
   const $ = s => document.querySelector(s);
   const $$ = s => document.querySelectorAll(s);
 
+  // ─── Debug Logging ─────────────────────────────────
+  const LOG = true;
+  function dbg(...args) {
+    if (LOG) console.log('%c[PConverter]', 'color: #3b82f6; font-weight: bold;', ...args);
+  }
+  function dbgWarn(...args) {
+    if (LOG) console.warn('%c[PConverter]', 'color: #f59e0b; font-weight: bold;', ...args);
+  }
+  function dbgErr(...args) {
+    if (LOG) console.error('%c[PConverter]', 'color: #ef4444; font-weight: bold;', ...args);
+  }
+  dbg('Script loaded, DOM ready:', document.readyState);
+
   // ─── State ────────────────────────────────────────
   const state = {
     files: [],
@@ -329,7 +342,9 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
 
   function handleFiles(fileList) {
     state.files = Array.from(fileList);
-    if (state.files.length === 0) return;
+    dbg('handleFiles called:', state.files.length, 'files');
+    state.files.forEach(f => dbg('  -', f.name, formatBytes(f.size), f.type));
+    if (state.files.length === 0) { dbgWarn('No files, returning'); return; }
     $('#uploadPlaceholder').classList.add('hidden');
     $('#uploadFileInfo').classList.remove('hidden');
     const totalSize = state.files.reduce((s,f) => s+f.size, 0);
@@ -404,22 +419,34 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
   // ─── Load Compatible Formats ──────────────────────
   async function loadCompatibleFormats() {
     const ext = state.files[0]?.name.split('.').pop()?.toLowerCase();
-    if (!ext) return;
+    dbg('loadCompatibleFormats: source ext =', ext);
+    if (!ext) { dbgWarn('No extension found'); return; }
     try {
+      dbg('Fetching /api/categories, /api/compatible/' + ext + ', /api/presets');
       const [catRes, fmtRes, presetRes] = await Promise.all([
         fetch('/api/categories'),
         fetch(`/api/compatible/${ext}`),
         fetch('/api/presets'),
       ]);
-      state.categories = (await catRes.json()).categories;
+      dbg('Responses:', catRes.status, fmtRes.status, presetRes.status);
+      const catData = await catRes.json();
       const compatData = await fmtRes.json();
+      const presetData = await presetRes.json();
+      state.categories = catData.categories || {};
       state.compatibleFormats = compatData.targets || {};
-      state.presets = Object.values((await presetRes.json()).presets || {});
+      state.presets = Object.values(presetData.presets || {});
+      dbg('Categories:', Object.keys(state.categories));
+      dbg('Compatible targets:', Object.keys(state.compatibleFormats));
+      Object.entries(state.compatibleFormats).forEach(([k, v]) => {
+        dbg(`  ${k}: ${(v.formats || []).length} formats`);
+      });
+      dbg('Presets:', state.presets.map(p => p.label));
       renderFormatSelector(ext);
       $('#sectionFormat').classList.remove('hidden');
       $('#sectionFormat').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      dbg('Format section shown');
     } catch (err) {
-      console.error('Failed to load formats:', err);
+      dbgErr('Failed to load formats:', err);
     }
   }
 
@@ -597,7 +624,10 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
   $('#btnConvert').addEventListener('click', startConversion);
 
   async function startConversion() {
-    if (!state.selectedExt || state.files.length === 0) return;
+    dbg('startConversion called');
+    dbg('  selectedExt:', state.selectedExt);
+    dbg('  files:', state.files.length);
+    if (!state.selectedExt || state.files.length === 0) { dbgWarn('Missing format or files, aborting'); return; }
     goToStep(3);
     $('#sectionFormat').classList.add('hidden');
     $('#sectionProgress').classList.remove('hidden');
@@ -608,31 +638,38 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
     $('#progressSize').textContent = '';
 
     const opts = collectOptions();
+    dbg('Options:', opts);
 
     try {
       if (state.isBatch) {
+        dbg('Starting batch conversion');
         const fd = new FormData();
         state.files.forEach(f => fd.append('files', f));
         fd.append('target_format', state.selectedExt);
         fd.append('options', JSON.stringify(opts));
         const res = await fetch('/api/convert-batch', { method:'POST', body: fd });
+        dbg('Batch response:', res.status);
         const data = await res.json();
+        dbg('Batch data:', data);
         state.batchId = data.batch_id;
         renderBatchProgress(data.files || []);
         pollBatchStatus();
       } else {
+        dbg('Starting single conversion:', state.files[0].name, '->', state.selectedExt);
         const fd = new FormData();
         fd.append('file', state.files[0]);
         fd.append('target_format', state.selectedExt);
         fd.append('options', JSON.stringify(opts));
         const res = await fetch('/api/convert', { method:'POST', body: fd });
+        dbg('Convert response:', res.status);
         const data = await res.json();
+        dbg('Convert data:', data);
         state.taskId = data.task_id;
         connectWebSocket(state.taskId);
         pollTaskStatus(state.taskId);
       }
     } catch (err) {
-      console.error('Convert error:', err);
+      dbgErr('Convert error:', err);
       $('#progressPhase').textContent = 'Error: ' + err.message;
     }
   }
@@ -662,34 +699,41 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
 
   // ─── WebSocket ────────────────────────────────────
   function connectWebSocket(taskId) {
+    dbg('Connecting WebSocket for task:', taskId);
     try {
       const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
       const ws = new WebSocket(`${proto}//${location.host}/ws/status/${taskId}`);
+      ws.onopen = () => dbg('WebSocket connected');
       ws.onmessage = e => {
         try {
           const data = JSON.parse(e.data);
+          dbg('WS message:', data.status, data.progress + '%', data.phase);
           updateProgressUI(data);
-          if (data.status === 'done' || data.status === 'error') {
+          if (data.status === 'completed' || data.status === 'failed') {
+            dbg('WS: task finished with status', data.status);
             ws.close();
-            if (data.status === 'done') showResult();
+            if (data.status === 'completed') showResult();
+            else { $('#progressPhase').textContent = 'Failed: ' + (data.error || 'Unknown error'); }
           }
-        } catch(_){}
+        } catch(err) { dbgErr('WS message parse error:', err); }
       };
-      ws.onerror = () => {};
-      ws.onclose = () => {};
-    } catch(_) {}
+      ws.onerror = (err) => dbgErr('WebSocket error:', err);
+      ws.onclose = () => dbg('WebSocket closed');
+    } catch(err) { dbgErr('WebSocket connection failed:', err); }
   }
 
   function pollTaskStatus(taskId) {
+    dbg('Starting poll for task:', taskId);
     const poll = async () => {
       try {
         const res = await fetch(`/api/status/${taskId}`);
         const data = await res.json();
+        dbg('Poll status:', data.status, data.progress + '%', data.phase);
         updateProgressUI(data);
-        if (data.status === 'done') { showResult(); return; }
-        if (data.status === 'error') { $('#progressPhase').textContent = 'Error: ' + (data.error||'Unknown'); return; }
+        if (data.status === 'completed') { dbg('Poll: completed'); showResult(); return; }
+        if (data.status === 'failed') { dbgErr('Poll: failed -', data.error); $('#progressPhase').textContent = 'Error: ' + (data.error||'Unknown'); return; }
         setTimeout(poll, 1000);
-      } catch(_) { setTimeout(poll, 2000); }
+      } catch(err) { dbgErr('Poll error:', err); setTimeout(poll, 2000); }
     };
     setTimeout(poll, 2000);
   }
@@ -726,7 +770,8 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
     $('#progressBar').style.width = pct + '%';
     $('#progressPercent').textContent = Math.round(pct) + '%';
     const phases = { uploading:'Uploading file...', analyzing:'Analyzing...', converting:'Converting...', finalizing:'Finalizing...', done:'Done!' };
-    $('#progressPhase').textContent = phases[data.phase] || data.phase || 'Converting...';
+    const phaseText = phases[data.phase] || data.phase || 'Converting...';
+    $('#progressPhase').textContent = phaseText;
     if (data.output_size_fmt) {
       const srcSize = formatBytes(state.files[0]?.size||0);
       $('#progressSize').textContent = `${srcSize} → ~${data.output_size_fmt}`;
@@ -734,11 +779,14 @@ html:not(.dark) .tab-active { background: #2563eb; color: white; }
   }
 
   function showResult() {
+    dbg('showResult called');
     $('#sectionProgress').classList.add('hidden');
     $('#sectionResult').classList.remove('hidden');
     const f = state.files[0];
-    $('#resultInfo').textContent = `${f.name} → ${state.selectedExt.toUpperCase()}`;
-    $('#btnDownload').onclick = () => { window.location.href = `/api/download/${state.taskId}`; };
+    const resultText = `${f.name} → ${state.selectedExt.toUpperCase()}`;
+    dbg('Result:', resultText);
+    $('#resultInfo').textContent = resultText;
+    $('#btnDownload').onclick = () => { dbg('Download clicked for task:', state.taskId); window.location.href = `/api/download/${state.taskId}`; };
     loadHistory();
   }
 
